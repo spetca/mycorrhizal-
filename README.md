@@ -16,8 +16,9 @@ https://github.com/user-attachments/assets/fccf7da6-b3dc-4d9d-b948-00ce303d5d27
 
 ## Table of Contents
 
-1. [Project Vision](#project-vision)
-2. [Quick Start](#quick-start)
+
+1. [Quick Start](#quick-start)
+2. [Project Vision](#project-vision)
 3. [Hardware Setup](#hardware-setup)
 4. [Flashing Devices](#flashing-devices)
 5. [Display Features](#display-features)
@@ -29,6 +30,30 @@ https://github.com/user-attachments/assets/fccf7da6-b3dc-4d9d-b948-00ce303d5d27
 11. [Serial Communication: Why KISS Protocol?](#serial-communication-why-kiss-protocol)
 12. [Security Status](#security-status)
 13. [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start
+
+### 0. clone this repo
+
+### 1. Flash Mycorrhizal Firmware to a Heltec V3
+
+```bash
+cd utilities/
+python flash_device.py --device heltec_v3 --example mycorrhizal_firmware.py
+```
+
+This flashes a single unified firmware to your device (like RNode or Meshtastic).
+The firmware handles all the mesh networking - you just connect with a chat client.
+
+### 2. Connect with a Chat Client 
+
+**Option A: Serial (USB) - Recommended**
+```bash
+cd apps/
+open web_chat.html in browser
+```
 
 ---
 
@@ -47,54 +72,27 @@ Build a resilient mesh communication network that:
 #### 1. LoRa (Long Range Radio) - PRIMARY FOCUS ✅
 **Status:** In active development
 
-- Long range (2-10km urban, 15-40km rural)
-- Low power consumption
-- License-free ISM bands (433/868/915 MHz)
-- Works without any infrastructure
-- Ideal for disaster/emergency scenarios
-
-**Current:** SX1262 driver fully implemented, TX/RX working, mesh routing operational
-**Next:** Improve file transfer reliability
-
 #### 2. Bluetooth LE - 
 **Status:** not yet implemented
-
-- Short-range local connectivity (10-100m)
-- Configuration interface
-- Wireless chat client connection
-- Low power
 
 #### 3. WiFi 
 **Status:** not yet implemented
 
-- ESP-NOW for mesh
-- WiFi Direct peer-to-peer
-- High bandwidth, short range
-
 #### 4. Packet Radio / APRS (Ham Radio)
 **Status:** Not yet implemented
-
-- Existing ham radio infrastructure
-- Long range HF propagation
-- Emergency communications standard
-- Requires ham radio license
 
 #### 5. HaLow (802.11ah - Long Range WiFi)
 **Status:** Not yet implemented
 
-- Sub-1 GHz WiFi (900 MHz band)
-- 1km+ range
-- Standard WiFi stack compatibility
-
 ### Core Use Cases
 
-#### 1. Messaging ✅
+#### 1. Messaging 
 - Direct messaging (working)
 - Group Messaging
 - Store-and-forward for offline nodes (planned)
 - Message encryption (not yet implemented)
 
-#### 2. File Transfer 🔄
+#### 2. File Transfer 
 - File transfer over mesh (in progress)
 - Supports up to 64KB files, but in practice only has demonstrated 1KB files successfully
 - Automatic fragmentation
@@ -107,42 +105,6 @@ Build a resilient mesh communication network that:
 - Offline Wikipedia snapshots
 
 ---
-
-## Quick Start
-
-### 0. clone this repo
-
-### 1. Flash Mycorrhizal Firmware to Heltec V3
-
-```bash
-cd utilities/
-python flash_device.py --device heltec_v3 --example mycorrhizal_firmware.py
-```
-
-This flashes a single unified firmware to your device (like RNode or Meshtastic).
-The firmware handles all the mesh networking - you just connect with a chat client.
-
-### 2. Connect with a Chat Client 
-
-**Option A: Serial (USB) - Recommended**
-```bash
-cd utilities/
-python serial_chat.py
-```
-
-**Option B: BLE - Not yet implemented**
-
-### 3. Send Your First Message
-
-```
-!info          # Show node info
-!announce      # Discover peers
-!peers         # List discovered peers
-!dm <addr> <message>    # Send to specific node
-!sendfile <addr> </path/to/file>
-```
----
-
 
 ## Currently Supported Devices
 
@@ -307,56 +269,7 @@ BLE: Disabled
 (Not enabled
 in code)
 ```
-
-### Page 5: Battery
-
-```
-BATTERY
-Voltage: 3.85V
-Level: 75%
-Status: DISCHARGING
-┌──────────────────────────────┐
-│████████████████████░░░░░░░░░░│ ← Battery bar
-└──────────────────────────────┘
-```
-
-Shows battery status (if LiPo connected):
-- Voltage reading
-- Percentage estimate
-- Charging state
-- Visual bar graph
-
-**Note**: Battery monitoring requires ADC calibration for accurate readings.
-
-**Button:** Press to cycle through pages (200ms debounce).
-
 ---
-
-## Chat Interfaces
-
-### Option 1: Serial Chat (Recommended)
-
-**Best for: Development, debugging, full-featured chat**
-
-Connect to your device over USB serial for a full terminal chat experience:
-
-```bash
-cd utilities/
-python serial_chat.py
-```
-**Commands:**
-```
-!info                      - Show node info
-!announce                  - Discover peers
-!peers                     - List known peers
-!dm <address> <message>    - Send direct message
-!sendfile <address> <path> - Send file (max 64KB)
-!target <address>          - Set chat target
-<message>                  - Send to current target
-!history                   - Show message history
-!help                      - Show all commands
-!quit                      - Exit
-```
 
 ## Architecture
 
