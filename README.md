@@ -98,8 +98,6 @@ Build a resilient mesh communication network that:
 - Resource directories
 - Offline Wikipedia snapshots
 
-**Example:** Emergency shelter locations, medical resources, community bulletin board
-
 ---
 
 ## Quick Start
