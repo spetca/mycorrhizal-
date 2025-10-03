@@ -1,0 +1,7 @@
+# CPython dependencies (not needed on MicroPython)
+cryptography>=46.0.0
+
+# Device flashing utilities
+esptool>=4.7.0
+mpremote>=1.23.0
+pyserial>=3.5

@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mycorrhizal Mesh Chat</title>
+    <style>
+/* BRUTALIST STYLESHEET - BLACK & WHITE ONLY, NO CURVES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            height: 100vh;
+            color: #000;
+            overflow: hidden;
+        }
+
+        .app {
+            height: 100vh;
+            display: flex;
+            background: #fff;
+            border: 4px solid #000;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 340px;
+            background: #fff;
+            border-right: 4px solid #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 4px solid #000;
+            background: #000;
+            color: #fff;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border: 2px solid #fff;
+        }
+
+        .status-dot.connected {
+            background: #fff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-header {
+            flex: 1;
+            padding: 8px 12px;
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-header:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-header:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .connect-buttons {
+            padding: 16px;
+            border-bottom: 4px solid #000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-connect {
+            flex: 1;
+            padding: 12px;
+            background: #fff;
+            color: #000;
+            border: 3px solid #000;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-connect:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-connect:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .new-conversation {
+            padding: 12px;
+            border-bottom: 4px solid #000;
+        }
+
+        .new-conv-input {
+            width: 100%;
+            padding: 8px;
+            background: #fff;
+            color: #000;
+            border: 3px solid #000;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            margin-bottom: 8px;
+        }
+
+        .new-conv-input::placeholder {
+            color: #000;
+            opacity: 0.5;
+        }
+
+        .new-conv-input:focus {
+            border-color: #000;
+        }
+
+        .btn-new-conv {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            color: #fff;
+            border: 3px solid #000;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-new-conv:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-new-conv:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 4px solid #000;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-right: 2px solid #000;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tab:last-child {
+            border-right: none;
+        }
+
+        .tab.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .tab:hover:not(.active) {
+            background: #000;
+            color: #fff;
+        }
+
+        .conversations {
+            flex: 1;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .conversation {
+            padding: 12px 16px;
+            border-bottom: 2px solid #000;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .conversation:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .conversation:hover .conv-name,
+        .conversation:hover .conv-address,
+        .conversation:hover .conv-preview,
+        .conversation:hover .conv-time {
+            color: #fff;
+        }
+
+        .conversation.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .conversation.active .conv-name,
+        .conversation.active .conv-address,
+        .conversation.active .conv-preview,
+        .conversation.active .conv-time {
+            color: #fff;
+        }
+
+        .conversation.unread::before {
+            content: '■';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            margin-top: -8px;
+            font-size: 16px;
+        }
+
+        .conv-name {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .conv-address {
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .conv-preview {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conv-time {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 11px;
+        }
+
+        .peer-item {
+            padding: 12px 16px;
+            border-bottom: 2px solid #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .peer-item:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .peer-item.selected {
+            background: #000;
+            color: #fff;
+        }
+
+        .peer-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #000;
+        }
+
+        .peer-info {
+            flex: 1;
+        }
+
+        .peer-name {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .peer-address {
+            font-size: 11px;
+        }
+
+        .group-badge {
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .modal {
+            background: #fff;
+            border: 4px solid #000;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #000;
+            letter-spacing: 2px;
+        }
+
+        .modal-label {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 3px solid #000;
+            font-size: 14px;
+            margin-bottom: 16px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: 3px solid #000;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .modal-btn-primary {
+            background: #000;
+            color: #fff;
+        }
+
+        .modal-btn-primary:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .modal-btn-secondary {
+            background: #fff;
+            color: #000;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .selected-peers-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 2px solid #000;
+            padding: 8px;
+            margin-bottom: 16px;
+        }
+
+        .selected-peer-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            border: 2px solid #000;
+            padding: 4px 12px;
+            margin: 4px;
+            font-size: 12px;
+        }
+
+        .selected-peer-chip .remove {
+            cursor: pointer;
+            color: #000;
+            font-weight: 700;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 4px solid #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .chat-header-info h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .chat-header-info .address {
+            font-size: 11px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-action:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        .messages.drag-over::before {
+            content: 'DROP FILE (MAX 64KB)';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            border: 4px dashed #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #000;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .message-wrapper {
+            display: flex;
+        }
+
+        .message-wrapper.sent {
+            justify-content: flex-end;
+        }
+
+        .message-wrapper.received {
+            justify-content: flex-start;
+        }
+
+        .message {
+            max-width: 60%;
+            padding: 12px;
+            background: #fff;
+            border: 3px solid #000;
+            font-size: 14px;
+            color: #000;
+            font-family: 'Courier New', monospace;
+        }
+
+        .message-wrapper.sent .message {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .message-wrapper.received .message {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .message-text {
+            font-size: 13px;
+            word-wrap: break-word;
+        }
+
+        .message-system {
+            text-align: center;
+            padding: 8px;
+            border: 2px solid #000;
+            background: #fff;
+            color: #000;
+            font-size: 11px;
+            max-width: 80%;
+            margin: 0 auto;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: #fff;
+            border-top: 4px solid #000;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px;
+            border: 3px solid #000;
+            background: #fff;
+            font-size: 14px;
+            outline: none;
+            color: #000;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-field:focus {
+            border-color: #000;
+        }
+
+        .input-field::placeholder {
+            color: #000;
+            opacity: 0.5;
+        }
+
+        .btn-send {
+            padding: 12px 24px;
+            background: #000;
+            color: #fff;
+            border: 3px solid #000;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn-send:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-send:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .info-pane {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 200px;
+            background: #fff;
+            border: 3px solid #000;
+            padding: 12px;
+            font-size: 11px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .info-pane-header {
+            font-weight: 700;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #000;
+        }
+
+        .info-line {
+            padding: 4px 0;
+            border-bottom: 1px solid #000;
+        }
+
+        .info-line:last-child {
+            border-bottom: none;
+        }
+
+        .info-line .copyable {
+            cursor: pointer;
+            color: #000;
+        }
+
+        .info-line .copyable:hover {
+            text-decoration: underline;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #000;
+            color: #fff;
+            border: 3px solid #000;
+            padding: 12px 20px;
+            font-size: 14px;
+            animation: fadeOut 0.3s 2.7s;
+            z-index: 2000;
+            font-family: 'Courier New', monospace;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #fff;
+            border-left: 2px solid #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-top">
+                    <h1>MYCORRHIZAL</h1>
+                    <div class="status-dot" id="statusDot"></div>
+                </div>
+                <div class="header-controls">
+                    <button class="btn-header" id="announceBtn" disabled>ANNOUNCE</button>
+                    <button class="btn-header" id="infoBtn" disabled>INFO</button>
+                </div>
+            </div>
+
+            <div class="connect-buttons">
+                <button class="btn-connect" id="connectUsbBtn">USB</button>
+                <button class="btn-connect" id="connectBleBtn">BLE</button>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="tab active" id="conversationsTab">CHATS</button>
+                <button class="tab" id="peersTab">PEERS</button>
+            </div>
+
+            <div class="new-conversation" id="newConvSection" style="display: none;">
+                <input type="text" class="new-conv-input" id="newConvInput" placeholder="Paste peer address (16 bytes = 32 hex chars)...">
+                <button class="btn-new-conv" id="newConvBtn">START CONVERSATION</button>
+                <button class="btn-new-conv" id="createGroupBtn" style="margin-top: 8px;">CREATE GROUP CHAT</button>
+            </div>
+
+            <div class="conversations" id="conversationList">
+                <!-- Conversations will be added here -->
+            </div>
+
+            <div class="conversations" id="peerList" style="display: none;">
+                <!-- Peers will be added here -->
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div id="chatContent">
+                <div class="empty-state">
+                    <h2>NO CONVERSATION SELECTED</h2>
+                    <p>Connect to device and select or start a conversation</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Pane (hidden by default, shown when info button clicked) -->
+        <div class="info-pane" id="infoPane" style="display: none;">
+            <div class="info-pane-header">NODE INFO</div>
+            <div id="infoPaneContent"></div>
+        </div>
+
+        <!-- Create Group Modal -->
+        <div class="modal-overlay" id="createGroupModal" style="display: none;">
+            <div class="modal">
+                <div class="modal-header">Create Group Chat</div>
+
+                <label class="modal-label">Group Name</label>
+                <input type="text" class="modal-input" id="groupNameInput" placeholder="Enter group name...">
+
+                <label class="modal-label">Select Members</label>
+                <div class="selected-peers-list" id="selectedPeersList">
+                    <div style="color: #999; font-size: 12px; text-align: center;">No members selected</div>
+                </div>
+
+                <div id="peerSelectionList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 16px;">
+                    <!-- Peer checkboxes will be added here -->
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-secondary" id="cancelGroupBtn">Cancel</button>
+                    <button class="modal-btn modal-btn-primary" id="confirmGroupBtn">Create Group</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // KISS Protocol Constants and Functions
+        // ============================================================
+
+        // KISS special characters
+        const FEND = 0xC0;  // Frame delimiter
+        const FESC = 0xDB;  // Escape character
+        const TFEND = 0xDC; // Transposed frame end
+        const TFESC = 0xDD; // Transposed escape
+
+        // Command bytes for file transfer (browser → device)
+        const CMD_FILE_INFO = 0x10;   // Query file transfer info (Phase 1)
+        const CMD_FILE_START = 0x11;  // Start file transfer (Phase 2)
+        const CMD_FILE_CHUNK = 0x12;  // File data chunk
+        const CMD_FILE_END = 0x13;    // End file transfer
+        const CMD_FILE_READY = 0x14;  // Device ready for transfer
+        const CMD_CHUNK_ACK = 0x15;   // Chunk acknowledged
+
+        // Command bytes for file receive (device → browser)
+        const CMD_FILE_RECEIVED = 0x16; // File received notification
+        const CMD_FILE_DATA = 0x17;     // Received file data chunk
+        const CMD_FILE_COMPLETE = 0x18; // File transfer complete
+
+        /**
+         * Escape FEND and FESC bytes in data
+         */
+        function escapeKissData(data) {
+            const result = [];
+            for (const byte of data) {
+                if (byte === FEND) {
+                    result.push(FESC, TFEND);
+                } else if (byte === FESC) {
+                    result.push(FESC, TFESC);
+                } else {
+                    result.push(byte);
+                }
+            }
+            return new Uint8Array(result);
+        }
+
+        /**
+         * Unescape FEND and FESC bytes in data
+         */
+        function unescapeKissData(data) {
+            const result = [];
+            let escape = false;
+
+            for (const byte of data) {
+                if (escape) {
+                    if (byte === TFEND) {
+                        result.push(FEND);
+                    } else if (byte === TFESC) {
+                        result.push(FESC);
+                    }
+                    escape = false;
+                } else if (byte === FESC) {
+                    escape = true;
+                } else {
+                    result.push(byte);
+                }
+            }
+
+            return new Uint8Array(result);
+        }
+
+        /**
+         * Encode a KISS frame
+         */
+        function encodeKissFrame(cmd, data = new Uint8Array(0)) {
+            const escaped = escapeKissData(data);
+            const frame = new Uint8Array(escaped.length + 3);
+            frame[0] = FEND;
+            frame[1] = cmd;
+            frame.set(escaped, 2);
+            frame[frame.length - 1] = FEND;
+            return frame;
+        }
+
+        /**
+         * KISS frame reader class for handling serial streams
+         */
+        class KISSReader {
+            constructor() {
+                this.buffer = [];
+                this.inFrame = false;
+            }
+
+            reset() {
+                this.buffer = [];
+                this.inFrame = false;
+            }
+
+            /**
+             * Feed bytes to the reader, returns complete frames
+             */
+            feedBytes(bytes) {
+                const frames = [];
+
+                for (const byte of bytes) {
+                    if (byte === FEND) {
+                        if (this.inFrame && this.buffer.length > 0) {
+                            // Frame complete - extract command and data
+                            const cmd = this.buffer[0];
+                            const escapedData = new Uint8Array(this.buffer.slice(1));
+                            const data = unescapeKissData(escapedData);
+                            frames.push({ cmd, data });
+                            this.buffer = [];
+                        }
+                        this.inFrame = true;
+                        this.buffer = [];
+                    } else if (this.inFrame) {
+                        this.buffer.push(byte);
+                    }
+                }
+
+                return frames;
+            }
+        }
+
+        // ============================================================
+        // Application State
+        // ============================================================
+
+        let connection = null;
+        let connectionType = null;
+        let nodeAddress = null;
+        let conversations = new Map(); // address/colony_id -> {messages: [], unread: 0, lastTime: timestamp, isGroup: bool}
+        let peers = new Set(); // Set of peer addresses
+        let colonies = new Map(); // colony_id -> {name, members: [], groupKey}
+        let selectedPeersForGroup = new Set(); // For group creation
+        let activeConversation = null;
+        let activeTab = 'chats';
+        let nodeStats = {}; // Store node stats
+        let fileTransfers = new Map(); // transfer_id -> {filename, chunks: [], size}
+        let isSendingFile = false; // Flag to prevent concurrent file sends
+        let kissReader = new KISSReader(); // KISS frame reader
+        let pendingAck = null; // For waiting for acknowledgments
+        let peerUpdateInterval = null; // Interval for periodic peer updates
+
+        // Reset file sending state (for error recovery)
+        function resetFileSendState() {
+            isSendingFile = false;
+            pendingAck = null;
+            console.log('File sending state reset');
+        }
+
+        // Expose reset function to window for manual recovery
+        window.resetFileSend = resetFileSendState;
+
+        // Request peer list update
+        function requestPeerUpdate() {
+            if (connection) {
+                sendCommand('!peers');
+            }
+        }
+
+        // Start periodic peer updates
+        function startPeerUpdates() {
+            if (peerUpdateInterval) return; // Already running
+
+            // Request peers immediately
+            requestPeerUpdate();
+
+            // Then every 10 seconds
+            peerUpdateInterval = setInterval(() => {
+                requestPeerUpdate();
+            }, 10000);
+        }
+
+        // Stop periodic peer updates
+        function stopPeerUpdates() {
+            if (peerUpdateInterval) {
+                clearInterval(peerUpdateInterval);
+                peerUpdateInterval = null;
+            }
+        }
+
+        // DOM
+        const statusDot = document.getElementById('statusDot');
+        const connectUsbBtn = document.getElementById('connectUsbBtn');
+        const connectBleBtn = document.getElementById('connectBleBtn');
+        const announceBtn = document.getElementById('announceBtn');
+        const infoBtn = document.getElementById('infoBtn');
+        const conversationsTab = document.getElementById('conversationsTab');
+        const peersTab = document.getElementById('peersTab');
+        const newConvSection = document.getElementById('newConvSection');
+        const newConvInput = document.getElementById('newConvInput');
+        const newConvBtn = document.getElementById('newConvBtn');
+        const createGroupBtn = document.getElementById('createGroupBtn');
+        const conversationList = document.getElementById('conversationList');
+        const peerList = document.getElementById('peerList');
+        const chatContent = document.getElementById('chatContent');
+        const infoPane = document.getElementById('infoPane');
+        const infoPaneContent = document.getElementById('infoPaneContent');
+        const createGroupModal = document.getElementById('createGroupModal');
+        const groupNameInput = document.getElementById('groupNameInput');
+        const selectedPeersList = document.getElementById('selectedPeersList');
+        const peerSelectionList = document.getElementById('peerSelectionList');
+        const cancelGroupBtn = document.getElementById('cancelGroupBtn');
+        const confirmGroupBtn = document.getElementById('confirmGroupBtn');
+
+        // Check browser support
+        if (!('serial' in navigator)) {
+            connectUsbBtn.disabled = true;
+            connectUsbBtn.title = 'Web Serial not supported';
+        }
+
+        if (!('bluetooth' in navigator)) {
+            connectBleBtn.disabled = true;
+            connectBleBtn.title = 'Web Bluetooth not supported';
+        }
+
+        // Connect USB
+        connectUsbBtn.addEventListener('click', async () => {
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+
+                connection = {
+                    port: port,
+                    reader: port.readable.getReader(),
+                    writer: port.writable.getWriter()
+                };
+                connectionType = 'serial';
+
+                updateConnectionStatus(true);
+                startReading();
+
+                setTimeout(() => sendCommand('!info'), 500);
+                setTimeout(() => sendCommand('!announce'), 1000);
+            } catch (error) {
+                addSystemMessage(`USB connection failed: ${error.message}`);
+            }
+        });
+
+        // Connect BLE
+        connectBleBtn.addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'Mycorrhizal' }],
+                    optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                const txChar = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                const rxChar = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+
+                connection = { device, server, txChar, rxChar };
+                connectionType = 'ble';
+
+                await txChar.startNotifications();
+                txChar.addEventListener('characteristicvaluechanged', handleBleData);
+
+                updateConnectionStatus(true);
+
+                setTimeout(() => sendCommand('!info'), 500);
+                setTimeout(() => sendCommand('!announce'), 1000);
+            } catch (error) {
+                addSystemMessage(`BLE connection failed: ${error.message}`);
+            }
+        });
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                statusDot.classList.add('connected');
+                announceBtn.disabled = false;
+                infoBtn.disabled = false;
+                newConvBtn.disabled = false;
+                newConvSection.style.display = 'block';
+
+                // Start periodic peer updates
+                startPeerUpdates();
+            } else {
+                statusDot.classList.remove('connected');
+                announceBtn.disabled = true;
+                infoBtn.disabled = true;
+                newConvBtn.disabled = true;
+                newConvSection.style.display = 'none';
+
+                // Stop peer updates
+                stopPeerUpdates();
+            }
+        }
+
+        // Tab handlers
+        conversationsTab.addEventListener('click', () => {
+            activeTab = 'chats';
+            conversationsTab.classList.add('active');
+            peersTab.classList.remove('active');
+            conversationList.style.display = 'block';
+            peerList.style.display = 'none';
+            newConvSection.style.display = 'block';
+        });
+
+        peersTab.addEventListener('click', () => {
+            activeTab = 'peers';
+            peersTab.classList.add('active');
+            conversationsTab.classList.remove('active');
+            peerList.style.display = 'block';
+            conversationList.style.display = 'none';
+            newConvSection.style.display = 'none';
+
+            // Request fresh peer list when switching to peers tab
+            requestPeerUpdate();
+            renderPeers();
+        });
+
+        // New conversation handler
+        newConvBtn.addEventListener('click', () => {
+            const addr = newConvInput.value.trim();
+
+            // Validate hex address (should be 32 characters for 16 bytes)
+            if (!/^[0-9a-fA-F]{32}$/.test(addr)) {
+                showNotification('Invalid address! Must be 32 hex characters (16 bytes)');
+                return;
+            }
+
+            // Start conversation with this address
+            startConversation(addr);
+            newConvInput.value = '';
+        });
+
+        // Allow Enter key in input
+        newConvInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                newConvBtn.click();
+            }
+        });
+
+        // Group chat modal handlers
+        createGroupBtn.addEventListener('click', () => {
+            openCreateGroupModal();
+        });
+
+        cancelGroupBtn.addEventListener('click', () => {
+            closeCreateGroupModal();
+        });
+
+        confirmGroupBtn.addEventListener('click', () => {
+            createGroupChat();
+        });
+
+        function openCreateGroupModal() {
+            selectedPeersForGroup.clear();
+            groupNameInput.value = '';
+            renderPeerSelection();
+            renderSelectedPeers();
+            createGroupModal.style.display = 'flex';
+        }
+
+        function closeCreateGroupModal() {
+            createGroupModal.style.display = 'none';
+        }
+
+        function renderPeerSelection() {
+            peerSelectionList.innerHTML = '';
+
+            if (peers.size === 0) {
+                peerSelectionList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999; font-size: 12px;">No peers discovered yet</div>';
+                return;
+            }
+
+            for (const addr of peers) {
+                const div = document.createElement('div');
+                div.className = 'peer-item';
+                div.innerHTML = `
+                    <input type="checkbox" class="peer-checkbox" data-addr="${addr}" ${selectedPeersForGroup.has(addr) ? 'checked' : ''}>
+                    <div class="peer-info">
+                        <div class="peer-name">${addr.substring(0, 8)}</div>
+                        <div class="peer-address">${addr}</div>
+                    </div>
+                `;
+
+                const checkbox = div.querySelector('.peer-checkbox');
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedPeersForGroup.add(addr);
+                    } else {
+                        selectedPeersForGroup.delete(addr);
+                    }
+                    renderSelectedPeers();
+                });
+
+                peerSelectionList.appendChild(div);
+            }
+        }
+
+        function renderSelectedPeers() {
+            if (selectedPeersForGroup.size === 0) {
+                selectedPeersList.innerHTML = '<div style="color: #999; font-size: 12px; text-align: center;">No members selected</div>';
+                return;
+            }
+
+            selectedPeersList.innerHTML = '';
+            for (const addr of selectedPeersForGroup) {
+                const chip = document.createElement('div');
+                chip.className = 'selected-peer-chip';
+                chip.innerHTML = `
+                    <span>${addr.substring(0, 8)}...</span>
+                    <span class="remove" data-addr="${addr}">×</span>
+                `;
+
+                const removeBtn = chip.querySelector('.remove');
+                removeBtn.addEventListener('click', () => {
+                    selectedPeersForGroup.delete(addr);
+                    renderPeerSelection();
+                    renderSelectedPeers();
+                });
+
+                selectedPeersList.appendChild(chip);
+            }
+        }
+
+        function createGroupChat() {
+            const groupName = groupNameInput.value.trim();
+
+            if (!groupName) {
+                showNotification('Please enter a group name');
+                return;
+            }
+
+            if (selectedPeersForGroup.size === 0) {
+                showNotification('Please select at least one member');
+                return;
+            }
+
+            // Send create colony command to firmware
+            sendCommand(`!createcolony ${groupName}`);
+
+            // Store pending group info (will be completed when we receive COLONY_CREATED)
+            window.pendingGroupMembers = Array.from(selectedPeersForGroup);
+            window.pendingGroupName = groupName;
+
+            closeCreateGroupModal();
+            showNotification(`Creating group "${groupName}"...`);
+        }
+
+        // Button handlers
+        announceBtn.addEventListener('click', () => {
+            sendCommand('!announce');
+            showNotification('Broadcasting announce...');
+        });
+
+        infoBtn.addEventListener('click', () => {
+            sendCommand('!info');
+            // Toggle info pane
+            if (infoPane.style.display === 'none') {
+                infoPane.style.display = 'block';
+            } else {
+                infoPane.style.display = 'none';
+            }
+        });
+
+        // Send text command
+        async function sendCommand(cmd) {
+            if (!connection) return;
+
+            const data = cmd + '\n';
+            try {
+                if (connectionType === 'serial') {
+                    const encoder = new TextEncoder();
+                    await connection.writer.write(encoder.encode(data));
+                } else if (connectionType === 'ble') {
+                    const encoder = new TextEncoder();
+                    const encoded = encoder.encode(data);
+                    for (let i = 0; i < encoded.length; i += 20) {
+                        const chunk = encoded.slice(i, Math.min(i + 20, encoded.length));
+                        await connection.rxChar.writeValue(chunk);
+                    }
+                }
+            } catch (error) {
+                console.error('Send error:', error);
+            }
+        }
+
+        // Send binary KISS frame
+        async function sendKissFrame(frame) {
+            if (!connection) return;
+
+            try {
+                if (connectionType === 'serial') {
+                    await connection.writer.write(frame);
+                } else if (connectionType === 'ble') {
+                    // BLE has 20-byte MTU, split frame if needed
+                    for (let i = 0; i < frame.length; i += 20) {
+                        const chunk = frame.slice(i, Math.min(i + 20, frame.length));
+                        await connection.rxChar.writeValue(chunk);
+                    }
+                }
+            } catch (error) {
+                console.error('Send frame error:', error);
+            }
+        }
+
+        // Wait for acknowledgment
+        function waitForAck(type, timeout = 10000, expectedSeq = undefined) {
+            return new Promise((resolve, reject) => {
+                console.log(`Setting pendingAck: type=${type}, expectedSeq=${expectedSeq}`);
+                pendingAck = { type, resolve, reject, expectedSeq };
+
+                // Timeout
+                const timeoutId = setTimeout(() => {
+                    if (pendingAck && pendingAck.type === type) {
+                        console.error(`TIMEOUT for ${type}${expectedSeq !== undefined ? ` (seq ${expectedSeq})` : ''}`);
+                        pendingAck = null;
+                        reject(new Error(`Timeout waiting for ${type}${expectedSeq !== undefined ? ` (seq ${expectedSeq})` : ''}`));
+                    }
+                }, timeout);
+
+                // Store timeout ID so we can clear it when ACK arrives
+                pendingAck.timeoutId = timeoutId;
+            });
+        }
+
+        // Read from serial (handles both text lines and KISS binary frames)
+        async function startReading() {
+            const decoder = new TextDecoder();
+            let textBuffer = '';
+
+            try {
+                while (true) {
+                    const { value, done } = await connection.reader.read();
+                    if (done) break;
+
+                    // Feed raw bytes to KISS reader first
+                    const frames = kissReader.feedBytes(value);
+                    for (const frame of frames) {
+                        handleKissFrame(frame.cmd, frame.data);
+                    }
+
+                    // Also process as text for backward compatibility (text commands)
+                    textBuffer += decoder.decode(value, { stream: true });
+                    let lines = textBuffer.split('\n');
+                    textBuffer = lines.pop();
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (line) handleMessage(line);
+                    }
+                }
+            } catch (error) {
+                console.error('Read error:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Handle BLE data
+        function handleBleData(event) {
+            const decoder = new TextDecoder();
+            const line = decoder.decode(event.target.value).trim();
+            if (line) handleMessage(line);
+        }
+
+        // Handle KISS binary frame
+        function handleKissFrame(cmd, data) {
+            // Only log valid KISS commands (0x10-0x18)
+            if (cmd >= 0x10 && cmd <= 0x18) {
+                console.log('KISS Frame:', '0x' + cmd.toString(16), 'len:', data.length);
+            }
+
+            if (cmd === CMD_FILE_RECEIVED) {
+                // File received notification from device
+                // Payload: transfer_id(16) + sender(16) + filename_len(1) + filename + size(4)
+                const transferId = Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join('');
+                const sender = Array.from(data.slice(16, 32)).map(b => b.toString(16).padStart(2, '0')).join('');
+                const filenameLen = data[32];
+                const filename = new TextDecoder().decode(data.slice(33, 33 + filenameLen));
+                const size = (data[33 + filenameLen] << 24) | (data[34 + filenameLen] << 16) |
+                             (data[35 + filenameLen] << 8) | data[36 + filenameLen];
+
+                console.log('File received notification:', filename, size, 'bytes from', sender.substring(0, 16));
+
+                // Initialize receive state
+                fileTransfers.set(transferId, {
+                    sender: sender,
+                    filename: filename,
+                    size: size,
+                    chunks: []
+                });
+
+            } else if (cmd === CMD_FILE_DATA) {
+                // Received file data chunk
+                // Payload: transfer_id(16) + chunk_data
+                const transferId = Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join('');
+                const chunkData = data.slice(16);
+
+                if (fileTransfers.has(transferId)) {
+                    fileTransfers.get(transferId).chunks.push(chunkData);
+                    console.log(`File chunk: ${chunkData.length} bytes (total chunks: ${fileTransfers.get(transferId).chunks.length})`);
+                }
+
+            } else if (cmd === CMD_FILE_COMPLETE) {
+                // File transfer complete
+                // Payload: transfer_id(16)
+                const transferId = Array.from(data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+                if (fileTransfers.has(transferId)) {
+                    const transfer = fileTransfers.get(transferId);
+
+                    // Reconstruct file from chunks
+                    const totalSize = transfer.chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+                    const fileData = new Uint8Array(totalSize);
+                    let offset = 0;
+                    for (const chunk of transfer.chunks) {
+                        fileData.set(chunk, offset);
+                        offset += chunk.length;
+                    }
+
+                    console.log(`File complete: ${transfer.filename}, ${fileData.length} bytes`);
+
+                    // Add as file message
+                    addFileMessage(transfer.sender, transfer.filename, fileData, 'received');
+                    showNotification(`Received ${transfer.filename}!`);
+
+                    // Clean up
+                    fileTransfers.delete(transferId);
+                }
+
+            } else if (cmd === CMD_FILE_READY) {
+                // Device ready acknowledgment
+                console.log('Got FILE_READY ACK');
+                if (pendingAck && pendingAck.type === 'FILEREADY') {
+                    if (pendingAck.timeoutId) clearTimeout(pendingAck.timeoutId);
+                    pendingAck.resolve(data);
+                    pendingAck = null;
+                }
+
+            } else if (cmd === CMD_CHUNK_ACK) {
+                // Chunk acknowledgment (payload: seq as 2 bytes big-endian)
+                // NOTE: Should be exactly 2 bytes, but check for anomalies
+                if (data.length !== 2) {
+                    console.warn(`CHUNK_ACK has unexpected length: ${data.length}, data:`, Array.from(data));
+                    console.warn(`Expected 2 bytes for sequence number. Firmware may have bug.`);
+                }
+
+                // Extract seq from first 2 bytes only
+                const seq = (data[0] << 8) | data[1];
+                console.log(`Got CHUNK_ACK for seq ${seq}, data (${data.length} bytes):`, Array.from(data));
+                console.log(`pendingAck:`, pendingAck);
+
+                if (pendingAck && pendingAck.type === 'CHUNKACK') {
+                    console.log(`Checking: expectedSeq=${pendingAck.expectedSeq}, received seq=${seq}`);
+                    // Verify it's the right sequence number
+                    if (pendingAck.expectedSeq === undefined || pendingAck.expectedSeq === seq) {
+                        console.log(`✓ Resolving ACK for seq ${seq}`);
+                        if (pendingAck.timeoutId) clearTimeout(pendingAck.timeoutId);
+                        pendingAck.resolve(seq);
+                        pendingAck = null;
+                    } else {
+                        console.warn(`Got ACK for seq ${seq}, expected ${pendingAck.expectedSeq}`);
+                        // Don't resolve - wait for correct ACK or timeout
+                    }
+                } else {
+                    console.warn(`No pending ACK or wrong type. pendingAck:`, pendingAck);
+                    console.warn(`This means the ACK arrived after timeout or pendingAck was cleared!`);
+                }
+            }
+        }
+
+        // Handle incoming text message
+        function handleMessage(line) {
+            console.log('RX:', line);
+
+            if (line.startsWith('NODE:')) {
+                nodeAddress = line.substring(5).trim();
+                updateEmptyState();
+                updateInfoPane();
+            } else if (line.startsWith('PEER:')) {
+                const addr = line.substring(5).trim();
+                addPeerToList(addr);
+            } else if (line.startsWith('MSG:')) {
+                const parts = line.substring(4).split(':', 2);
+                if (parts.length === 2) {
+                    addMessage(parts[0].trim(), parts[1].trim(), 'received');
+                }
+            } else if (line.startsWith('FILEREADY:')) {
+                // Device ready for file transfer (text protocol fallback)
+                const parts = line.substring(10).split(':');
+                if (parts.length >= 1) {
+                    const fragmentCount = parseInt(parts[0]);
+                    if (pendingAck && pendingAck.type === 'FILEREADY') {
+                        pendingAck.resolve(fragmentCount);
+                        pendingAck = null;
+                    }
+                }
+            } else if (line.startsWith('CHUNKACK:')) {
+                // Chunk acknowledged (text protocol fallback)
+                const seq = line.substring(9).trim();
+                if (pendingAck && pendingAck.type === 'CHUNKACK') {
+                    pendingAck.resolve(seq);
+                    pendingAck = null;
+                }
+            } else if (line.startsWith('FILESENT:')) {
+                // FILESENT:address:transfer_id:filename
+                const parts = line.substring(9).split(':');
+                if (parts.length >= 3) {
+                    showNotification(`Sending ${parts[2]}...`);
+                }
+            } else if (line.startsWith('COLONY_CREATED:')) {
+                // COLONY_CREATED:colony_id:name
+                const parts = line.substring(15).split(':');
+                if (parts.length >= 2) {
+                    const colonyId = parts[0];
+                    const name = parts.slice(1).join(':');
+                    handleColonyCreated(colonyId, name);
+                }
+            } else if (line.startsWith('COLONY_KEY:')) {
+                // COLONY_KEY:colony_id:group_key - store the key for sharing
+                const parts = line.substring(11).split(':');
+                if (parts.length >= 2 && colonies.has(parts[0])) {
+                    colonies.get(parts[0]).groupKey = parts[1];
+                }
+            } else if (line.startsWith('COLONY_MSG:')) {
+                // COLONY_MSG:colony_id:sender_addr:sender_name:message
+                const parts = line.substring(11).split(':', 4);
+                if (parts.length === 4) {
+                    addColonyMessage(parts[0], parts[1], parts[2], parts[3]);
+                }
+            } else if (line.startsWith('COLONY_JOINED:')) {
+                // COLONY_JOINED:colony_id:name
+                const parts = line.substring(14).split(':');
+                if (parts.length >= 2) {
+                    const colonyId = parts[0];
+                    const name = parts.slice(1).join(':');
+                    handleColonyJoined(colonyId, name);
+                    showNotification(`You joined group "${name}"!`);
+                }
+            } else if (line.startsWith('COLONY_MEMBER_ADDED:')) {
+                // COLONY_MEMBER_ADDED:colony_id:member_address
+                const parts = line.substring(20).split(':');
+                if (parts.length >= 2) {
+                    showNotification(`Member added to group`);
+                }
+            } else if (line.startsWith('COLONY_SENT:')) {
+                // Confirmation that message was sent to colony
+                showNotification('Message sent to group');
+            } else if (line.startsWith('INFO:') || line.startsWith('ERROR:') || line.startsWith('SENT:') || line.startsWith('BROADCAST:')) {
+                // System messages - show as toast/notification
+                console.log('SYSTEM:', line);
+                showNotification(line);
+            } else if (line.startsWith('ROUTES:') || line.startsWith('PEERS:') || line.startsWith('TX:') || line.startsWith('TX_BYTES:')) {
+                // Info stats - parse and store
+                console.log('STATS:', line);
+                const parts = line.split(':');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join(':').trim();
+                    nodeStats[key] = value;
+                    updateInfoPane();
+                }
+            } else if (line.startsWith('[DEBUG]')) {
+                // Ignore debug
+            }
+        }
+
+        // Show notification toast
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = message;
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.remove();
+            }, 3000);
+        }
+
+        // Handle colony created
+        function handleColonyCreated(colonyId, name) {
+            console.log('Colony created:', colonyId, name);
+
+            // Create colony object
+            colonies.set(colonyId, {
+                name: name,
+                members: [],
+                groupKey: null
+            });
+
+            // Create conversation for this colony
+            conversations.set(colonyId, {
+                address: colonyId,
+                name: name,
+                messages: [{
+                    text: `Group "${name}" created`,
+                    type: 'system',
+                    time: Date.now()
+                }],
+                unread: 0,
+                lastTime: Date.now(),
+                isGroup: true
+            });
+
+            // Add members if we have pending group members
+            if (window.pendingGroupMembers && window.pendingGroupName === name) {
+                for (const memberAddr of window.pendingGroupMembers) {
+                    sendCommand(`!colonyaddmember ${colonyId} ${memberAddr}`);
+                    colonies.get(colonyId).members.push(memberAddr);
+                }
+                window.pendingGroupMembers = null;
+                window.pendingGroupName = null;
+            }
+
+            showNotification(`Group "${name}" created!`);
+            renderConversations();
+            openConversation(colonyId);
+        }
+
+        // Handle colony joined
+        function handleColonyJoined(colonyId, name) {
+            console.log('Colony joined:', colonyId, name);
+
+            // Create colony object
+            colonies.set(colonyId, {
+                name: name,
+                members: [],
+                groupKey: null
+            });
+
+            // Create conversation
+            conversations.set(colonyId, {
+                address: colonyId,
+                name: name,
+                messages: [{
+                    text: `Joined group "${name}"`,
+                    type: 'system',
+                    time: Date.now()
+                }],
+                unread: 0,
+                lastTime: Date.now(),
+                isGroup: true
+            });
+
+            showNotification(`Joined group "${name}"!`);
+            renderConversations();
+            openConversation(colonyId);
+        }
+
+        // Add message to colony conversation
+        function addColonyMessage(colonyId, senderAddr, senderName, message) {
+            console.log('Colony message:', colonyId, senderAddr, senderName, message);
+
+            // Create conversation if doesn't exist
+            if (!conversations.has(colonyId)) {
+                const colonyInfo = colonies.get(colonyId);
+                const colonyName = colonyInfo ? colonyInfo.name : colonyId.substring(0, 8);
+
+                conversations.set(colonyId, {
+                    address: colonyId,
+                    name: colonyName,
+                    messages: [],
+                    unread: 0,
+                    lastTime: Date.now(),
+                    isGroup: true
+                });
+            }
+
+            const conv = conversations.get(colonyId);
+            conv.messages.push({
+                sender: senderAddr,
+                senderName: senderName,
+                text: message,
+                type: 'received',
+                time: Date.now()
+            });
+            conv.lastTime = Date.now();
+
+            if (colonyId !== activeConversation) {
+                conv.unread++;
+            }
+
+            renderConversations();
+
+            if (colonyId === activeConversation) {
+                renderChat(colonyId);
+            }
+        }
+
+        // Update info pane with stats
+        function updateInfoPane() {
+            let html = '';
+
+            if (nodeAddress) {
+                html += `<div class="info-line"><strong>Address:</strong> <span class="copyable" onclick="copyToClipboard('${nodeAddress}')">${nodeAddress}</span></div>`;
+            }
+
+            for (const [key, value] of Object.entries(nodeStats)) {
+                html += `<div class="info-line"><strong>${key}:</strong> ${value}</div>`;
+            }
+
+            infoPaneContent.innerHTML = html || '<div class="info-line">No data available</div>';
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Copied to clipboard!');
+            }).catch(err => {
+                showNotification('Failed to copy');
+            });
+        }
+
+        // Hex to bytes conversion
+        function hexToBytes(hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+        // Bytes to hex conversion
+        function bytesToHex(bytes) {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Add file message to conversation
+        function addFileMessage(sender, filename, fileData, type) {
+            const addr = (type === 'sent') ? activeConversation : sender;
+
+            if (!conversations.has(addr)) {
+                conversations.set(addr, {
+                    address: addr,
+                    name: addr.substring(0, 8),
+                    messages: [],
+                    unread: 0,
+                    lastTime: Date.now()
+                });
+
+                if (!peers.has(addr)) {
+                    peers.add(addr);
+                    renderPeers();
+                }
+            }
+
+            const conv = conversations.get(addr);
+
+            // Create download link
+            const blob = new Blob([fileData]);
+            const url = URL.createObjectURL(blob);
+
+            conv.messages.push({
+                sender: sender,
+                type: 'file',
+                filename: filename,
+                size: fileData.length,
+                url: url,
+                messageType: type,
+                time: Date.now()
+            });
+            conv.lastTime = Date.now();
+
+            if (type === 'received' && addr !== activeConversation) {
+                conv.unread++;
+            }
+
+            renderConversations();
+
+            if (addr === activeConversation) {
+                renderChat(addr);
+            }
+        }
+
+        // Update empty state when we have node address
+        function updateEmptyState() {
+            if (!activeConversation && nodeAddress) {
+                chatContent.innerHTML = `
+                    <div class="empty-state">
+                        <h2>CONNECTED</h2>
+                        <p>Node: ${nodeAddress}</p>
+                        <p>Discovering peers... send !announce to find devices</p>
+                        <p>Select a conversation from the left to start chatting</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Add peer to peer list (don't auto-create conversation)
+        function addPeerToList(addr) {
+            if (!peers.has(addr)) {
+                console.log('New peer discovered:', addr);
+                peers.add(addr);
+                renderPeers();
+            }
+        }
+
+        // Start conversation with peer (from peer list)
+        function startConversation(addr) {
+            if (!conversations.has(addr)) {
+                conversations.set(addr, {
+                    address: addr,
+                    name: addr.substring(0, 8),
+                    messages: [{
+                        text: 'Conversation started',
+                        type: 'system',
+                        time: Date.now()
+                    }],
+                    unread: 0,
+                    lastTime: Date.now()
+                });
+            }
+
+            // Switch to chats tab and open conversation
+            activeTab = 'chats';
+            conversationsTab.classList.add('active');
+            peersTab.classList.remove('active');
+            conversationList.style.display = 'block';
+            peerList.style.display = 'none';
+
+            renderConversations();
+            openConversation(addr);
+        }
+
+        // Render peer list
+        function renderPeers() {
+            peerList.innerHTML = '';
+
+            if (peers.size === 0) {
+                peerList.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No peers discovered yet</div>';
+                return;
+            }
+
+            for (const addr of peers) {
+                const div = document.createElement('div');
+                div.className = 'peer-item';
+                div.innerHTML = `
+                    <div class="peer-name">${addr.substring(0, 8)}</div>
+                    <div class="peer-address">${addr}</div>
+                `;
+                div.addEventListener('click', () => startConversation(addr));
+                peerList.appendChild(div);
+            }
+        }
+
+        // Add message to conversation
+        function addMessage(sender, text, type) {
+            const addr = (type === 'sent') ? activeConversation : sender;
+
+            // If receiving a message from someone not in conversations, create conversation
+            if (!conversations.has(addr)) {
+                conversations.set(addr, {
+                    address: addr,
+                    name: addr.substring(0, 8),
+                    messages: [],
+                    unread: 0,
+                    lastTime: Date.now()
+                });
+
+                // Also add to peer list if not there
+                if (!peers.has(addr)) {
+                    peers.add(addr);
+                    renderPeers();
+                }
+            }
+
+            const conv = conversations.get(addr);
+            conv.messages.push({
+                sender: sender,
+                text: text,
+                type: type,
+                time: Date.now()
+            });
+            conv.lastTime = Date.now();
+
+            if (type === 'received' && addr !== activeConversation) {
+                conv.unread++;
+            }
+
+            renderConversations();
+
+            if (addr === activeConversation) {
+                renderChat(addr);
+            }
+        }
+
+        // Add system message
+        function addSystemMessage(text) {
+            if (!activeConversation) return;
+            const conv = conversations.get(activeConversation);
+            conv.messages.push({
+                text: text,
+                type: 'system',
+                time: Date.now()
+            });
+            renderChat(activeConversation);
+        }
+
+        // Render conversation list
+        function renderConversations() {
+            conversationList.innerHTML = '';
+
+            // Sort by most recent
+            const sorted = Array.from(conversations.entries())
+                .sort((a, b) => b[1].lastTime - a[1].lastTime);
+
+            for (const [addr, conv] of sorted) {
+                const div = document.createElement('div');
+                div.className = 'conversation' +
+                    (addr === activeConversation ? ' active' : '') +
+                    (conv.unread > 0 ? ' unread' : '');
+
+                const lastMsg = conv.messages[conv.messages.length - 1];
+                let preview = 'No messages';
+                if (lastMsg) {
+                    if (lastMsg.type === 'file') {
+                        preview = `📎 ${lastMsg.filename}`;
+                    } else if (lastMsg.type === 'system') {
+                        preview = lastMsg.text.substring(0, 30);
+                    } else {
+                        preview = lastMsg.text.substring(0, 30);
+                    }
+                }
+                const time = new Date(conv.lastTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                const groupBadge = conv.isGroup ? '<span class="group-badge">GROUP</span>' : '';
+
+                div.innerHTML = `
+                    <div class="conv-name">${conv.name}${groupBadge}</div>
+                    <div class="conv-address">${addr.substring(0, 16)}...</div>
+                    <div class="conv-preview">${preview}</div>
+                    <div class="conv-time">${time}</div>
+                `;
+
+                div.addEventListener('click', () => openConversation(addr));
+                conversationList.appendChild(div);
+            }
+        }
+
+        // Open conversation
+        function openConversation(addr) {
+            activeConversation = addr;
+
+            // Clear unread
+            const conv = conversations.get(addr);
+            if (conv) conv.unread = 0;
+
+            renderConversations();
+            renderChat(addr);
+        }
+
+        // Render chat
+        function renderChat(addr) {
+            const conv = conversations.get(addr);
+            if (!conv) return;
+
+            chatContent.innerHTML = `
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <h2>${conv.name}</h2>
+                        <div class="address">${addr}</div>
+                    </div>
+                </div>
+                <div class="messages" id="messagesArea"></div>
+                <div class="input-area">
+                    <div class="input-row">
+                        <input type="text" class="input-field" id="messageInput" placeholder="Type message...">
+                        <button class="btn-send" id="sendBtn">SEND</button>
+                    </div>
+                </div>
+            `;
+
+            const messagesArea = document.getElementById('messagesArea');
+
+            // Sort messages by timestamp before rendering
+            const sortedMessages = [...conv.messages].sort((a, b) => a.time - b.time);
+
+            for (const msg of sortedMessages) {
+                if (msg.type === 'system') {
+                    messagesArea.innerHTML += `
+                        <div class="message-system">${msg.text}</div>
+                    `;
+                } else if (msg.type === 'file') {
+                    const time = new Date(msg.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const sizeKB = (msg.size / 1024).toFixed(1);
+                    messagesArea.innerHTML += `
+                        <div class="message-wrapper ${msg.messageType}">
+                            <div class="message">
+                                <div class="message-header">
+                                    <span>${msg.sender === nodeAddress ? 'YOU' : conv.name}</span>
+                                    <span>${time}</span>
+                                </div>
+                                <div class="message-text">
+                                    📎 <a href="${msg.url}" download="${msg.filename}" style="color: #4CAF50; text-decoration: underline;">${msg.filename}</a>
+                                    <br><span style="font-size: 12px; color: #666;">${sizeKB} KB</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const time = new Date(msg.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    // For group chats, show sender name. For 1-on-1, show YOU or conversation name
+                    let senderDisplay;
+                    if (conv.isGroup) {
+                        senderDisplay = msg.senderName || (msg.sender ? msg.sender.substring(0, 8) : 'Unknown');
+                    } else {
+                        senderDisplay = msg.sender === nodeAddress ? 'YOU' : conv.name;
+                    }
+                    messagesArea.innerHTML += `
+                        <div class="message-wrapper ${msg.type}">
+                            <div class="message">
+                                <div class="message-header">
+                                    <span>${senderDisplay}</span>
+                                    <span>${time}</span>
+                                </div>
+                                <div class="message-text">${msg.text}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+
+            // Setup drag-and-drop for file upload (use event delegation to persist across re-renders)
+            messagesArea.ondragover = (e) => {
+                e.preventDefault();
+                messagesArea.classList.add('drag-over');
+            };
+
+            messagesArea.ondragleave = (e) => {
+                // Only remove if actually leaving the messages area
+                if (e.target === messagesArea) {
+                    messagesArea.classList.remove('drag-over');
+                }
+            };
+
+            messagesArea.ondrop = async (e) => {
+                e.preventDefault();
+                messagesArea.classList.remove('drag-over');
+
+                const file = e.dataTransfer.files[0];
+                if (!file) {
+                    showNotification('No file selected');
+                    return;
+                }
+
+                // Check file size (64KB limit)
+                if (file.size > 65536) {
+                    showNotification('File too large! Max 64KB');
+                    return;
+                }
+
+                if (isSendingFile) {
+                    showNotification('Already sending a file, please wait...');
+                    return;
+                }
+
+                isSendingFile = true;
+                console.log('Sending file:', file.name, file.size, 'bytes');
+                showNotification(`Preparing ${file.name}...`);
+
+                // Read file
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const bytes = new Uint8Array(reader.result);
+
+                        // Parse destination address
+                        const destAddr = hexToBytes(addr);
+                        if (destAddr.length !== 16) {
+                            showNotification('Invalid address! Must be 32 hex characters');
+                            isSendingFile = false;
+                            return;
+                        }
+
+                        console.log('🔵 Using KISS binary protocol (two-phase transfer)');
+
+                        // PHASE 1: Query fragment count
+                        console.log('📤 Phase 1: Querying fragment count...');
+                        const infoData = new Uint8Array(16 + 1 + file.name.length + 4);
+                        infoData.set(destAddr, 0);  // 16 bytes
+                        infoData[16] = file.name.length;  // 1 byte
+                        const nameBytes = new TextEncoder().encode(file.name);
+                        infoData.set(nameBytes, 17);  // Variable
+                        infoData[17 + file.name.length] = (file.size >> 24) & 0xFF;  // 4 bytes
+                        infoData[18 + file.name.length] = (file.size >> 16) & 0xFF;
+                        infoData[19 + file.name.length] = (file.size >> 8) & 0xFF;
+                        infoData[20 + file.name.length] = file.size & 0xFF;
+
+                        const infoFrame = encodeKissFrame(CMD_FILE_INFO, infoData);
+                        await sendKissFrame(infoFrame);
+
+                        // Wait for FILEREADY with fragment count
+                        let totalFragments;
+                        try {
+                            const readyData = await waitForAck('FILEREADY', 5000);
+                            totalFragments = readyData;
+                            console.log(`✓ Firmware ready: ${totalFragments} fragments expected`);
+                        } catch (error) {
+                            console.error('FILEREADY timeout:', error);
+                            showNotification('Error: Firmware not ready (timeout)');
+                            return;  // Finally block will reset isSendingFile
+                        }
+
+                        // PHASE 2: Send file data
+                        console.log('📤 Phase 2: Sending file...');
+                        const startData = new Uint8Array(16 + 1 + file.name.length + 4);
+                        startData.set(destAddr, 0);  // 16 bytes
+                        startData[16] = file.name.length;  // 1 byte
+                        startData.set(nameBytes, 17);  // Variable
+                        startData[17 + file.name.length] = (file.size >> 24) & 0xFF;  // 4 bytes
+                        startData[18 + file.name.length] = (file.size >> 16) & 0xFF;
+                        startData[19 + file.name.length] = (file.size >> 8) & 0xFF;
+                        startData[20 + file.name.length] = file.size & 0xFF;
+
+                        const startFrame = encodeKissFrame(CMD_FILE_START, startData);
+                        await sendKissFrame(startFrame);
+
+                        // Wait for acknowledgment
+                        try {
+                            await waitForAck('FILEREADY', 5000);
+                            console.log('✓ Transfer started');
+                        } catch (error) {
+                            console.error('Transfer start timeout:', error);
+                            showNotification('Error: Transfer start failed (timeout)');
+                            return;  // Finally block will reset isSendingFile
+                        }
+
+                        // Send chunks (BINARY, not hex!)
+                        // Chunk size must account for KISS framing overhead:
+                        // - Max KISS frame buffer in firmware: 255 bytes
+                        // - KISS frame format: FEND(1) + CMD(1) + escaped_data + FEND(1) = 3 bytes overhead
+                        // - Chunk payload: seq(2) + data
+                        // - Worst case escaping: every byte could be escaped (2x size)
+                        // - Math: (2 + chunkSize) * 2 + 3 <= 255
+                        // - Solving: chunkSize <= (255 - 3)/2 - 2 = 124 bytes (worst case)
+                        // - Being conservative: 200 bytes allows for typical escaping patterns
+                        const chunkSize = 200;  // bytes (safe for KISS 255-byte buffer)
+                        const totalChunks = Math.ceil(bytes.length / chunkSize);
+                        console.log(`📦 Sending ${totalChunks} chunks (${chunkSize} bytes each, binary)...`);
+
+                        for (let i = 0; i < bytes.length; i += chunkSize) {
+                            const chunk = bytes.slice(i, i + chunkSize);
+                            const seq = Math.floor(i / chunkSize);
+
+                            console.log(`Loop iteration: i=${i}, seq=${seq}, chunk.length=${chunk.length}, bytes.length=${bytes.length}`);
+
+                            // Encode: seq(2 bytes) + binary data
+                            const chunkData = new Uint8Array(2 + chunk.length);
+                            chunkData[0] = (seq >> 8) & 0xFF;
+                            chunkData[1] = seq & 0xFF;
+                            chunkData.set(chunk, 2);
+
+                            const chunkFrame = encodeKissFrame(CMD_FILE_CHUNK, chunkData);
+                            console.log(`Sending chunk ${seq}: ${chunk.length} bytes (frame size: ${chunkFrame.length})`);
+                            await sendKissFrame(chunkFrame);
+
+                            // Wait for ACK (longer timeout for LoRa transmission)
+                            try {
+                                console.log(`Waiting for ACK for chunk ${seq}...`);
+                                await waitForAck('CHUNKACK', 10000, seq);
+                                console.log(`✓ Chunk ${seq} acknowledged`);
+                            } catch (error) {
+                                console.error(`Chunk ${seq} ACK error:`, error.message);
+                                showNotification(`Error: Chunk ${seq} not acknowledged (timeout)`);
+                                return;  // Finally block will reset isSendingFile
+                            }
+
+                            // Progress indicator
+                            const progress = Math.round(((seq + 1) / totalChunks) * 100);
+                            if (progress % 10 === 0 || seq === totalChunks - 1) {
+                                console.log(`Progress: ${progress}% (${seq + 1}/${totalChunks} chunks)`);
+                                showNotification(`Sending ${file.name}: ${progress}%`);
+                            }
+                        }
+
+                        console.log('Loop completed, all chunks sent!');
+
+                        // Send FILE_END
+                        console.log('📨 Finalizing transfer...');
+                        const endFrame = encodeKissFrame(CMD_FILE_END);
+                        await sendKissFrame(endFrame);
+
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                        // Add to local conversation
+                        addFileMessage(nodeAddress, file.name, bytes, 'sent');
+                        showNotification(`✓ File sent successfully via KISS! (${totalChunks} chunks, ${bytes.length} bytes)`);
+                        console.log(`✓ File sent successfully via KISS! (${totalChunks} chunks, ${bytes.length} bytes)`);
+                    } catch (error) {
+                        console.error('File send error:', error);
+                        console.error('Error stack:', error.stack);
+                        showNotification(`Error sending file: ${error.message}`);
+                    } finally {
+                        console.log('Finally block: resetting isSendingFile');
+                        isSendingFile = false;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            // Setup input
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+
+            sendBtn.addEventListener('click', () => {
+                const text = messageInput.value.trim();
+                if (!text) return;
+
+                // Check if this is a group chat
+                if (conv.isGroup) {
+                    // Send to colony
+                    sendCommand(`!colonysend ${addr} ${text}`);
+                    // Add to local messages (with our own sender info)
+                    addColonyMessage(addr, nodeAddress, 'You', text);
+                    // Update last message as 'sent' type
+                    const messages = conv.messages;
+                    if (messages.length > 0) {
+                        messages[messages.length - 1].type = 'sent';
+                    }
+                } else {
+                    // Send to individual
+                    sendCommand(`!send ${addr} ${text}`);
+                    addMessage(nodeAddress, text, 'sent');
+                }
+
+                messageInput.value = '';
+            });
+
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendBtn.click();
+            });
+
+            messageInput.focus();
+        }
+    </script>
+</body>
+</html>
