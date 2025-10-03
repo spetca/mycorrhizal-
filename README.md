@@ -1,6 +1,6 @@
 # Mycorrhizal - Complete Guide
 
-> *"Forgive me Lord for I have ~~sinned~~ vibe coded v0.1 slop of a mesh communication ecosystem with chat, group chat (wip), and file transfer (wip)"*
+*Forgive me Lord for I have ~~sinned~~ vibe coded v0.1 slop of a mesh communication ecosystem with chat, group chat (wip), and file transfer (wip)*
 
 Mycorrhizal focuses on **local radio and wireless technologies** that don't require internet connectivity/backbone or centralized services for transport. It's like if meshtastic and reticulum had a baby and that baby wasn't very good at what it was suppose to do yet.
 
