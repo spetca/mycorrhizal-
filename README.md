@@ -4,11 +4,11 @@
 
 Mycorrhizal focuses on **local radio and wireless technologies** that don't require internet connectivity/backbone or centralized services for transport. It's like if meshtastic and reticulum had a baby and that baby wasn't very good at what it was suppose to do yet.
 
-
+## chattin'
 https://github.com/user-attachments/assets/6535c8fb-1978-4d01-91ae-b25f78b6e2d7
 
 
-
+## sending files
 https://github.com/user-attachments/assets/fccf7da6-b3dc-4d9d-b948-00ce303d5d27
 
 
