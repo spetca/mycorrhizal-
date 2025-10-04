@@ -1,281 +1,371 @@
-# Mycorrhizal - Complete Guide
+# Mycorrhizal
 
-*Forgive me Lord for I have ~~sinned~~ vibe coded v0.1 slop of a mesh communication ecosystem with chat, group chat (wip), and file transfer (wip)*
+> A privacy-focused, decentralized mesh networking stack for secure, low-bandwidth communication over LoRa and other physical layers.
 
-Mycorrhizal focuses on **local radio and wireless technologies** that don't require internet connectivity/backbone or centralized services for transport. It's like if meshtastic and reticulum had a baby and that baby wasn't very good at what it was suppose to do yet.
+*Forgive me Lord for I have ~~sinned~~ vibe coded v0.1 slop of a mesh communication ecosystem with chat, group chat, and file transfer*
 
-## chattin'
+Like if Meshtastic and Reticulum had a baby that wasn't very good at what it was supposed to do yet.
+
+---
+
+## Demo Videos
+
+### Direct Messaging
 https://github.com/user-attachments/assets/6535c8fb-1978-4d01-91ae-b25f78b6e2d7
 
-
-## sending files
+### File Transfer
 https://github.com/user-attachments/assets/fccf7da6-b3dc-4d9d-b948-00ce303d5d27
-
 
 ---
 
 ## Table of Contents
 
-
 1. [Quick Start](#quick-start)
-2. [Project Vision](#project-vision)
-3. [Hardware Setup](#hardware-setup)
-4. [Flashing Devices](#flashing-devices)
-5. [Display Features](#display-features)
-6. [Chat Interfaces](#chat-interfaces)
-7. [Message Commands](#message-commands)
-8. [Architecture](#architecture)
-9. [Stack Components](#stack-components)
-10. [Storage & Persistence](#storage--persistence)
-11. [Serial Communication: Why KISS Protocol?](#serial-communication-why-kiss-protocol)
-12. [Security Status](#security-status)
-13. [Troubleshooting](#troubleshooting)
+2. [Core Features](#core-features)
+3. [How It Works](#how-it-works)
+   - [Direct Messages](#direct-messages-dms)
+   - [Group Chat (Colony)](#group-chat-colony)
+   - [File Transfer](#file-transfer)
+4. [Hardware Setup](#hardware-setup)
+5. [Chat Interfaces](#chat-interfaces)
+6. [Architecture](#architecture)
+7. [Packet Format](#packet-format)
+8. [Routing & Multi-Hop](#routing--multi-hop)
+9. [Display Features](#display-features)
+10. [Security Status](#security-status)
+11. [Development](#development)
 
 ---
 
 ## Quick Start
 
-### 0. clone this repo
+### 1. Clone & Install
 
-### 1. Flash Mycorrhizal Firmware to a Heltec V3
+```bash
+git clone https://github.com/spetca/mycorrhizal.git
+cd mycorrhizal
+```
+
+### 2. Flash Firmware to Heltec V3
 
 ```bash
 cd utilities/
 python flash_device.py --device heltec_v3 --example mycorrhizal_firmware.py
 ```
 
-This flashes a single unified firmware to your device (like RNode or Meshtastic).
-The firmware handles all the mesh networking - you just connect with a chat client.
+This flashes unified firmware to your device (like RNode or Meshtastic). The firmware handles all mesh networking - you just connect with a chat client.
 
-### 2. Connect with a Chat Client 
+### 3. Connect with Chat Client
 
-**Option A: Serial (USB) - Recommended**
+**Web Interface (Recommended)**
 ```bash
 cd apps/
-open web_chat.html in browser
+open web_chat.html in your browser
 ```
 
----
-
-## Project Vision
-
-### Core Mission
-Build a resilient mesh communication network that:
-
-1. Has E2EE and anonyminity 
-2. can transport messages extremely long distances through hops
-3. Supports messaging, group messaging, and file transfer out of the box (with limitations on payload size)
-4. Supports any wireless medium - lora, Ha-Low, bluetooth, wifi, packet radio, etc
-
-### Primary Transport Technologies (Priority Order)
-
-#### 1. LoRa (Long Range Radio) - PRIMARY FOCUS ✅
-**Status:** In active development
-
-#### 2. Bluetooth LE - 
-**Status:** not yet implemented
-
-#### 3. WiFi 
-**Status:** not yet implemented
-
-#### 4. Packet Radio / APRS (Ham Radio)
-**Status:** Not yet implemented
-
-#### 5. HaLow (802.11ah - Long Range WiFi)
-**Status:** Not yet implemented
-
-### Core Use Cases
-
-#### 1. Messaging 
-- Direct messaging (working)
-- Group Messaging
-- Store-and-forward for offline nodes (planned)
-- Message encryption (not yet implemented)
-
-#### 2. File Transfer 
-- File transfer over mesh (in progress)
-- Supports up to 64KB files, but in practice only has demonstrated 1KB files successfully
-- Automatic fragmentation
-
-#### 3. Information Sharing - Simple Web Content (Planned)
-- Serve lightweight HTML pages over mesh
-- Emergency information bulletins
-- Community announcements
-- Resource directories
-- Offline Wikipedia snapshots
+Click "Connect Serial" and select your device. Start chatting!
 
 ---
 
-## Currently Supported Devices
+## Core Features
 
-- Heltec WiFi LoRa 32 V3 
+### ✅ What Works Now
+
+- **Direct messaging** - Send encrypted DMs to peers
+- **Group chat (Colony)** - Multi-party chat with shared keys
+- **File transfer** - Send files up to 64KB (tested reliably with 1KB files)
+- **Multi-hop routing** - Messages relay through intermediate nodes (up to 128 hops)
+- **Source anonymity** - No source address in packets for privacy
+- **Identity persistence** - Nodes keep the same address across reboots
+- **Web UI** - Modern chat interface with WebSerial support
+- **LoRa support** - Heltec V3 (ESP32-S3 + SX1262)
+
+### 🚧 In Progress
+
+- **Signature verification** - Currently signs but doesn't verify
+- **E2E encryption** - Keys exist but not yet used
+- **Multi-device group chat** - Works with 2 nodes, testing with more
+- **Bluetooth LE interface** - Nordic UART service
+
+### 📋 Planned
+
+- **WiFi mesh** - 802.11s or custom protocol
+- **Bluetooth mesh** - BLE flooding mesh
+- **Store-and-forward** - Offline message delivery
+- **Forward secrecy** - Ephemeral session keys
 
 ---
 
-## Flashing Devices Notes
+## How It Works
 
-### Using the Flash Utility
+### Direct Messages (DMs)
 
-#### Full Flash (First Time / Clean Install)
+DMs are simple unicast DATA packets sent between two nodes.
+
+**Packet Flow:**
+```
+Alice                    Router                   Bob
+  |                         |                       |
+  | 1. Create DATA packet   |                       |
+  |    - Type: DATA (0x01)  |                       |
+  |    - Dest: Bob's addr   |                       |
+  |    - Payload: "Hello"   |                       |
+  |    - Sign with Alice's  |                       |
+  |      private key        |                       |
+  |                         |                       |
+  | 2. Send via LoRa -----> |                       |
+  |                         |                       |
+  |                         | 3. Check destination  |
+  |                         |    Not for me?        |
+  |                         |    Forward to Bob --> |
+  |                         |                       |
+  |                         |                   4. Receive
+  |                         |                      Verify sig
+  |                         |                      Decrypt
+  |                         |                      Display
+```
+
+**Wire Format:**
+```
+[32-byte header][N-byte payload]["Hello"][64-byte signature]
+```
+
+**Header Breakdown (32 bytes):**
+- Flags: `0x40` (SIGNED)
+- TTL: `32` (hops remaining)
+- Hop count: `0`
+- Type: `0x01` (DATA)
+- Destination: Bob's 16-byte address
+- Payload length: `5` (2 bytes, big-endian)
+- Payload hash: First 8 bytes of SHA256("Hello")
+- Reserved: 2 bytes (zeros)
+
+**Total Size:** 32 + 5 + 64 = **101 bytes** (well under LoRa's 255-byte limit)
+
+---
+
+### Group Chat (Colony)
+
+Colonies use **shared symmetric keys** for group encryption. All members have the same group key and can decrypt each other's messages.
+
+**Colony Setup:**
+```
+Alice (creator)          Bob (invitee)
+  |                         |
+  | 1. Create colony        |
+  |    - Generate group key |
+  |    - Colony ID = hash   |
+  |      of group key       |
+  |                         |
+  | 2. Add Bob as member    |
+  |                         |
+  | 3. Send invitation ---> |
+  |    Format:              |
+  |    COLONY_INVITE:       |
+  |      <colony_id>:       |
+  |      <group_key>:       |
+  |      <name>             |
+  |                         |
+  |                     4. Receive invite
+  |                        Join colony
+  |                        Save group key
+  |                        Add Alice as member
+```
+
+**Sending Colony Messages:**
+```
+Alice                                    Bob
+  |                                       |
+  | 1. Encrypt with group key             |
+  |    Plaintext: "Hello group"           |
+  |    Encrypted: ChaCha20-Poly1305       |
+  |                                       |
+  | 2. Build payload:                     |
+  |    [colony_id (16)][encrypted data]   |
+  |                                       |
+  | 3. Send as DATA packet --------------> |
+  |    Destination: Bob's address         |
+  |                                       |
+  |                                   4. Receive
+  |                                      Check colony_id
+  |                                      Decrypt with group key
+  |                                      Auto-add Alice if new
+  |                                      Display message
+```
+
+**Why colony_id first?**
+- Router can quickly check if it's a colony message (first 16 bytes)
+- If colony_id matches a known colony, route to that colony handler
+- Efficient filtering without decryption
+
+**Member Discovery:**
+- Members auto-added when they send their first message
+- No need to pre-sync member lists
+- Invitation only contains colony_id + group_key + name (~126 bytes payload)
+- Total invitation size: 32 + 126 + 64 = **222 bytes** (under 255 limit)
+
+---
+
+### File Transfer
+
+Files are sent using **fragmented DATA packets** with KISS framing for reliability.
+
+**Fragment Format:**
+```
+[transfer_id (16)][index (1)][flags (1)][data (up to 200)]
+```
+
+**Flags:**
+- `0x00` - More fragments coming
+- `0x01` - FINAL fragment (last one)
+
+**Complete Flow:**
+
+```
+Desktop Client           Firmware (Alice)          Firmware (Bob)        Bob's Client
+     |                         |                         |                      |
+     | 1. FILE_START           |                         |                      |
+     |    [KISS frame]         |                         |                      |
+     |    addr + filename      |                         |                      |
+     |    + size               |                         |                      |
+     | ----------------------> |                         |                      |
+     |                         |                         |                      |
+     |                     2. Calculate fragments        |                      |
+     |                        Create transfer_id         |                      |
+     |                         |                         |                      |
+     |                     3. FILE_READY (ACK)           |                      |
+     | <---------------------- |                         |                      |
+     |                         |                         |                      |
+     | 4. FILE_CHUNK 0         |                         |                      |
+     |    [KISS frame]         |                         |                      |
+     |    seq + data           |                         |                      |
+     | ----------------------> |                         |                      |
+     |                         |                         |                      |
+     |                     5. Send fragment 0 over LoRa  |                      |
+     |                        [transfer_id][0][0x00][data]                      |
+     |                        ------------------->        |                      |
+     |                         |                         |                      |
+     |                         |                     6. Receive frag 0          |
+     |                         |                        Store in buffer         |
+     |                         |                         |                      |
+     |                     7. CHUNK_ACK                  |                      |
+     | <---------------------- |                         |                      |
+     |                         |                         |                      |
+     | 8. FILE_CHUNK 1         |                         |                      |
+     | ----------------------> |                         |                      |
+     |                         |                         |                      |
+     |                     9. Send fragment 1 over LoRa  |                      |
+     |                        ------------------->        |                      |
+     |                         |                         |                      |
+     ... (repeat for all chunks) ...                     |                      |
+     |                         |                         |                      |
+     | N. FILE_END             |                         |                      |
+     | ----------------------> |                         |                      |
+     |                         |                         |                      |
+     |                     N+1. Send FINAL fragment      |                      |
+     |                         [transfer_id][N][0x01][data]                     |
+     |                         ------------------->       |                      |
+     |                         |                         |                      |
+     |                         |                     N+2. Receive FINAL         |
+     |                         |                          Reassemble file       |
+     |                         |                          Verify integrity      |
+     |                         |                         |                      |
+     |                         |                     N+3. Send to client        |
+     |                         |                          FILE:<metadata>       |
+     |                         |                          FILEDATA:<chunks>     |
+     |                         |                          FILEEND               |
+     |                         |                         | -------------------> |
+     |                         |                         |                      |
+     |                         |                         |                  N+4. Save file
+```
+
+**KISS Protocol:**
+- Binary-safe framing with escape sequences
+- `[FEND (0xC0)][CMD][DATA][FEND (0xC0)]`
+- Escaping: `0xC0 → 0xDB 0xDC`, `0xDB → 0xDB 0xDD`
+- Commands: FILE_START (0x11), FILE_CHUNK (0x12), FILE_END (0x13), etc.
+
+**Why KISS?**
+1. **Binary-safe** - No issues with control characters in file data
+2. **Reliable framing** - Each frame is self-contained
+3. **No encoding overhead** - Send raw bytes (~2% escape overhead vs 100% for hex)
+4. **Flow control** - ACKs prevent buffer overflow
+5. **Proven protocol** - Used by RNode, ham radio TNCs, APRS
+
+**File Size Limits:**
+- **Theoretical max:** 64KB (limited by fragment reassembly buffer)
+- **Tested reliably:** 1KB files
+- **LoRa constraints:** ~200 bytes per fragment, 255 bytes total packet size
+
+---
+
+## Hardware Setup
+
+### Supported Devices
+
+- **Heltec WiFi LoRa 32 V3** (ESP32-S3 + SX1262 LoRa radio)
+
+### Wiring
+
+Heltec V3 has integrated LoRa radio - no wiring needed!
+
+**Built-in components:**
+- ESP32-S3 (dual-core, 240MHz)
+- SX1262 LoRa transceiver
+- 128x64 OLED display
+- USB-C (programming + serial)
+- Li-Po battery connector
+
+---
+
+## Chat Interfaces
+
+### Web UI (apps/web_chat.html)
+
+Modern browser-based interface using WebSerial API.
+
+**Features:**
+- Direct messages
+- Group chat with multi-select
+- File transfer (drag & drop)
+- Brutalist black/white styling
+- Message timestamps
+- Unread indicators
+- Auto-discovery of peers
+
+**Requirements:**
+- Chrome/Edge (WebSerial support)
+- USB connection to device
+
+**Usage:**
+1. Open `apps/web_chat.html` in browser
+2. Click "Connect Serial"
+3. Select your device port
+4. Start chatting!
+
+### Serial CLI (apps/serial_chat.py)
+
+Terminal-based interface for debugging.
 
 ```bash
-cd utilities/
-python flash_device.py --device heltec_v3 --example mycorrhizal_firmware.py
+cd apps/
+python serial_chat.py
 ```
 
-**What it does:**
-1. Checks for required tools (esptool, mpremote)
-2. Downloads MicroPython firmware (ESP32_GENERIC_S3-20241025-v1.24.0.bin)
-3. Erases flash
-4. Flashes MicroPython
-5. Installs packages (ssd1306 for display)
-6. Uploads Mycorrhizal library (`mycorrhizal/` folder)
-7. Uploads firmware as `main.py`
+**Commands:**
+- `!announce` - Broadcast presence
+- `!peers` - List discovered peers
+- `!send <addr> <msg>` - Send DM
+- `!info` - Show node stats
+- `!transfers` - List active file transfers
 
-**Use when:**
-- First time flashing a new device
-- MicroPython needs to be updated
-- Device has issues and needs a clean slate
-- Upgrading from old MicroPython version
-
-#### Quick Update (Skip MicroPython Flash)
-
-```bash
-cd utilities/
-python flash_device.py --device heltec_v3 --skip-firmware --example mycorrhizal_firmware.py
-```
-
-**What it does:**
-1. Checks for required tools (mpremote only)
-2. **Skips** erasing flash
-3. **Skips** flashing MicroPython (uses existing MicroPython)
-4. Uploads Mycorrhizal library (`mycorrhizal/` folder)
-5. Uploads firmware as `main.py`
-6. Resets device
-
-**Use when:**
-- MicroPython is already installed and working
-- You're updating Mycorrhizal code only
-- Testing firmware changes
-- Much faster (~30 seconds vs 2+ minutes)
-- **Preserves** identity.dat (your node keeps same address!)
-
-**Warning:** Only use `--skip-firmware` if MicroPython is already working. If you've never flashed the device, or if MicroPython is corrupted, do a full flash first.
-
-
-## Display Features
-
-The Heltec V3 has a 128x64 OLED display with 5 pages you can cycle through by pressing the button.
-
-### Page 1: Main Info (RNode-style)
-
-```
-Line 0:   Heltec_Nod             B  ■
-Line 10:  9151c5bf9f4d3dbe
-Line 18:  12a5c8f7d1e2a6b3
-Line 28:  915.0MHz SF9
-Line 48:  ┌──────────────────┐ ■T:5
-Line 56:  │   waterfall      │ ■R:3
-Line 64:  └──────────────────┘
-```
-
-**Actual Layout (pixel coordinates):**
-- **Line 0 (y=0)**: Device name (first 10 chars), BLE status at x=110, Online status at x=120
-- **Line 10 (y=10)**: First 16 chars of 32-char hex address
-- **Line 18 (y=18)**: Last 16 chars of 32-char hex address
-- **Line 28 (y=28)**: LoRa frequency and spreading factor
-- **Lines 48-64**: Waterfall (64px wide, 16px tall) on left side
-- **Line 48 (y=48)**: TX activity blip (4x4 square at x=66) + "T:" + packet count (at x=70)
-- **Line 56 (y=56)**: RX activity blip (4x4 square at x=66) + "R:" + packet count (at x=70)
-
-**Status Icons (top right):**
-- **B** (at x=110) = BLE connected
-- **b** (at x=110) = BLE on, not connected
-- **■** (at x=120) = Node online (solid 8x8 square)
-- **□** (at x=120) = Node offline (hollow 8x8 square)
-
-**TX/RX Activity Blips:**
-- Small 4x4 filled square appears at x=66 when active
-- TX blip at y=48 (300ms duration)
-- RX blip at y=56 (300ms duration)
-
-**Spectrum Waterfall (64x16 pixels):**
-- Positioned at x=0, y=48
-- Vertical bars = RSSI signal strength (0-14 pixels tall)
-- `:` dotted pattern = TX activity markers
-- Scrolls left to right (newest on right)
-- Updates every 1 second
-- Shows up to 62 samples (64px - 2px border)
-
-### Page 2: Network Stats
-
-```
-NETWORK STATS
-Routes: 2
-IDs: 3
-TX: 12
-RX: 8
-5KB / 3KB
-```
-
-Shows:
-- **Routes**: Number of known routes to other nodes
-- **IDs**: Number of known peer identities
-- **TX/RX**: Packet counts
-- **KB**: Bytes transmitted/received
-
-### Page 3: LoRa Config
-
-```
-LORA CONFIG
-Freq: 915.0MHz
-SF9 BW125k
-Power: 14dBm
-Rate: 537bps
-RSSI: -98dBm
-```
-
-Shows current LoRa radio configuration:
-- **Freq**: Operating frequency
-- **SF**: Spreading factor (5-12, higher = longer range, slower)
-- **BW**: Bandwidth in kHz (125/250/500)
-- **Power**: TX power in dBm (2-22)
-- **Rate**: Calculated bitrate in bps
-- **RSSI**: Current received signal strength
-
-### Page 4: BLE Status
-
-Shows Bluetooth connection state:
-
-**When inactive:**
-```
-BLE STATUS
-BLE: Ready
-Waiting for
-connection...
-```
-
-**When connected:**
-```
-BLE STATUS
-BLE: Connected
-Client active
-```
-
-**When disabled:**
-```
-BLE STATUS
-BLE: Disabled
-(Not enabled
-in code)
-```
 ---
 
 ## Architecture
 
 ### Unified Firmware Design
 
-Mycorrhizal uses a **single firmware** that runs on the device (like RNode or Meshtastic):
+Mycorrhizal uses **single firmware** that runs on the device (like RNode or Meshtastic):
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -284,29 +374,30 @@ Mycorrhizal uses a **single firmware** that runs on the device (like RNode or Me
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ Node (mesh networking, routing, identity)       │   │
-│  │   ├── Identity (Ed25519 signing)                │   │
+│  │   ├── Identity (Ed25519 signing, X25519 encrypt)│   │
 │  │   ├── RouteTable (multi-hop routing)            │   │
 │  │   ├── IdentityCache (known peers)               │   │
-│  │   └── TransferManager (file transfers)          │   │
+│  │   ├── Colony (group chat management)            │   │
+│  │   └── TransferManager (file fragmentation)      │   │
 │  └──────────────┬──────────────────────────────────┘   │
 │                 │                                       │
 │  ┌──────────────▼──────────────┐                       │
 │  │ LoRa Phycore (SX1262 radio) │                       │
 │  │   - TX/RX packet handling   │                       │
 │  │   - Bandwidth management    │                       │
-│  │   - Interface modes         │                       │
+│  │   - 915MHz, SF9, BW125kHz   │                       │
 │  └─────────────────────────────┘                       │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ Client Interfaces (serial + BLE)                │   │
-│  │   ├── Serial (USB)   → serial_chat.py           │   │
-│  │   └── BLE (Nordic)   → ble_chat.py/web          │   │
+│  │   ├── Serial (USB)   → web_chat.html           │   │
+│  │   └── BLE (Nordic)   → mobile apps (future)     │   │
 │  └─────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ Display (OLED) - shows mesh status              │   │
+│  │ Display (OLED) - mesh status                    │   │
 │  │   - 5 pages with network info                   │   │
-│  │   - RNode-style waterfall spectrum              │   │
+│  │   - Spectrum waterfall                          │   │
 │  │   - TX/RX activity indicators                   │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
@@ -318,303 +409,197 @@ Mycorrhizal uses a **single firmware** that runs on the device (like RNode or Me
 - Clients just send/receive messages
 - Like RNode: firmware on device, client on computer/phone
 
-### Interface Modes
+---
 
-**FULL (0x01)** - Default
-- Forward all announces (subject to bandwidth limits)
-- Full mesh participation
-- Standard for most nodes
+## Packet Format
 
-**GATEWAY (0x02)** - Bridge between network segments
-- Discovers paths across segments
-- Higher announce bandwidth (5% vs 2%)
-- For Raspberry Pi connecting LoRa to WiFi/Internet
+### Header Structure (32 bytes)
 
-**BOUNDARY (0x03)** - Connects different networks
-- Filters announces (only forwards local announces with low hop count)
-- Prevents flooding
-- For cell gateways and region gateways
-
-**ACCESS_POINT (0x04)** - Quiet mode
-- Doesn't auto-announce
-- Shorter path expiry
-- For mobile devices and temporary connections
-
-**ROAMING (0x05)** - Mobile nodes
-- Fast path expiration (30s vs 30min)
-- Frequent re-announces (1min vs 5min)
-- For vehicles, drones, hikers
-
-### Packet Format
-
-**32-byte header** (no source address for privacy):
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Header (fixed 32 bytes)                                     │
 ├─────────────────────────────────────────────────────────────┤
-│ Flags (1 byte) | TTL (1 byte) | Hop Count (1 byte)         │
-│ Packet Type (1 byte)                                        │
+│ Flags (1) | TTL (1) | Hop Count (1) | Type (1)             │
 │ Destination Address (16 bytes)                              │
-│ Payload Length (2 bytes)                                    │
-│ Payload Hash (8 bytes)                                      │
+│ Payload Length (2 bytes, big-endian)                        │
+│ Payload Hash (8 bytes, SHA256 truncated)                    │
 │ Reserved (2 bytes)                                          │
 ├─────────────────────────────────────────────────────────────┤
-│ Payload (variable length, possibly encrypted)              │
+│ Payload (variable length, 0-65535 bytes)                   │
+├─────────────────────────────────────────────────────────────┤
+│ Signature (64 bytes, Ed25519, if SIGNED flag set)          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Source address is implicit:**
-- Proven by encryption (only sender can encrypt to destination's key)
-- Proven by signature (verifies sender's identity)
-- Return path cached by routing layer
-- Intermediate nodes can't see source identity
+### Packet Types
 
-### Routing
+| Type | Value | Purpose |
+|------|-------|---------|
+| DATA | 0x01 | Regular messages, files, colony messages |
+| ANNOUNCE | 0x02 | Node presence broadcast (includes public key) |
+| PATH_REQUEST | 0x03 | Request route to destination |
+| PATH_RESPONSE | 0x04 | Reply with path information |
+| ACK | 0x05 | Acknowledgment |
+| KEEPALIVE | 0x06 | Keep connection alive |
 
-**Simple LRU route table:**
-- Each route: destination → next_hop + interface + hop_count
-- Routes learned from announces
-- Routes expire after 30 minutes (configurable)
-- Max routes based on platform:
-  - MCU nodes: 100 routes
-  - Desktop nodes: 100,000+ routes
+### Packet Flags (Bit Flags)
 
-**Multi-hop routing (supports 100+ hops):**
-1. Node A announces → Node B receives → adds route to A
-2. Node B forwards announce → Node C receives → adds route to A (via B)
-3. Node C can send to A, and Node B will forward
+| Bit | Flag | Description |
+|-----|------|-------------|
+| 7 | ENCRYPTED | Payload encrypted with X25519 + ChaCha20-Poly1305 |
+| 6 | SIGNED | Packet includes 64-byte Ed25519 signature |
+| 5 | PRIORITY | High priority (routing preference) |
+| 4 | FRAGMENTED | Part of fragmented file transfer |
+| 3-0 | Reserved | Future use |
 
-**Default configuration: 128 hops maximum**
+### Privacy Design
 
-**Real-world distance estimates:**
+**No source address in header!**
 
-| Scenario | Per-Hop Range | 128 Hops Coverage | Notes |
-|----------|--------------|-------------------|-------|
-| **Urban/City** | 0.5-2 km (0.3-1.2 mi) | 64-256 km (40-160 mi) | Buildings, obstacles |
-| **Suburban** | 2-5 km (1.2-3 mi) | 256-640 km (160-400 mi) | Mix of open/obstacles |
-| **Rural/Open** | 5-10 km (3-6 mi) | 640-1,280 km (400-800 mi) | Fields, low obstacles |
-| **Line-of-Sight (Mountain)** | 15-40 km (10-25 mi) | 1,920-5,120 km (1,200-3,200 mi) | Ideal conditions |
+Source identity is proven through:
+- **Encryption** - Only sender can encrypt to destination's public key
+- **Signature** - Verifies sender's identity (64-byte Ed25519)
+- **Return path** - Cached by routing layer from announces
 
-**Examples:**
-- **City mesh**: 128 hops = ~100-200 km (60-125 miles) - covers entire metropolitan area
-- **Rural network**: 128 hops = ~500-800 km (300-500 miles) - multi-county/state coverage
-- **Mountain relay network**: 128 hops = ~2,000-4,000 km (1,200-2,500 miles) - transcontinental possible!
-
-
-**Configuration examples:**
-
-```python
-# Mobile Node (Roaming)
-node = Node(name="mobile")
-node.max_hops = 32  # Limited range for mobile use
-node.interface_mode = InterfaceMode.ROAMING
-
-# Gateway Node (Bridge networks)
-node = Node(name="gateway")
-node.max_hops = 128  # Extended range
-node.interface_mode = InterfaceMode.GATEWAY  # 5% bandwidth
-
-# Boundary Node (Regional hub)
-node = Node(name="boundary")
-node.max_hops = 255  # Maximum range
-node.interface_mode = InterfaceMode.BOUNDARY  # Filters distant announces
-```
-
-### Platform-Specific Code
-
-**MicroPython:**
-- Temporary crypto (urandom, SHA256 hash - NOT SECURE)
-- Manual announce checking (no threading)
-- Simplified HKDF
-- Fixed-size buffers
-- No datetime objects
-
-**CPython:**
-- Full cryptography library (proper Ed25519/X25519)
-- Threading-based auto-announce
-- Proper HKDF
-- Dynamic allocation
-
-**⚠️ Warning:** Current MicroPython crypto is NOT production-ready. It's a temporary workaround to get the system running.
+**Benefits:**
+- Intermediate routers can't see source
+- Only destination knows who sent the message
+- Reduces header overhead (16 bytes saved)
 
 ---
 
-## Storage & Persistence
+## Routing & Multi-Hop
 
-### Identity Persistence ✅
-Nodes maintain the same address across reboots by saving identity keys to persistent storage.
+### Route Discovery
 
-**Platform-Agnostic Implementation:**
-- **MicroPython (Heltec):** Saves to `/identity.dat` in root filesystem
-- **CPython (Mac/PC):** Saves to `~/.local/share/mycorrhizal/identity.dat`
+Routes are learned from ANNOUNCE packets:
 
-**How It Works:**
-```python
-# Node automatically loads/saves identity
-node = Node(name="mynode", persistent_identity=True)  # Default
+```
+Node A                  Node B                  Node C
+  |                       |                       |
+  | 1. ANNOUNCE           |                       |
+  |    (broadcast)        |                       |
+  | --------------------> |                       |
+  |                       |                       |
+  |                   2. Add route: A via direct  |
+  |                      Increment hop count      |
+  |                      Forward ANNOUNCE ------> |
+  |                       |                       |
+  |                       |                   3. Add route:
+  |                       |                      A via B
+  |                       |                      (2 hops)
 ```
 
-**On First Boot:**
-1. No identity file exists → Generate new keys
-2. Save to storage
-3. Display shows new address
+### Route Table
 
-**On Subsequent Boots:**
-1. Load identity from storage
-2. Use same keys → Same address!
-3. Peers remember you
+Simple LRU cache:
+- **Entry:** `destination → (next_hop, interface, hop_count, timestamp)`
+- **Expiry:** 30 minutes (configurable)
+- **Capacity:** 100 routes (MCU), 100,000+ (desktop)
 
-**Manual Identity Management:**
-```python
-from mycorrhizal.storage.identity_storage import IdentityStorage
+### Multi-Hop Example
 
-# Check if identity exists
-if IdentityStorage.exists():
-    print("Identity found")
-
-# Delete identity (reset to new on next boot)
-IdentityStorage.delete()
-
-# Disable persistence
-node = Node(persistent_identity=False)  # New identity each boot
+**Network topology:**
+```
+Alice ←→ Router1 ←→ Router2 ←→ Bob
 ```
 
-**Storage Locations:**
-- **Heltec/ESP32:** `/identity.dat` (128 bytes)
-- **Mac/Linux:** `~/.local/share/mycorrhizal/identity.dat`
-- **Windows:** `%APPDATA%\mycorrhizal\identity.dat` (future)
+**Message flow (Alice → Bob):**
+```
+1. Alice creates packet:
+   - Destination: Bob's address
+   - TTL: 32
+   - Hop count: 0
+
+2. Alice sends to Router1:
+   - Router1 receives
+   - Checks destination ≠ Router1's address
+   - Looks up Bob in route table → next_hop = Router2
+   - Increments hop count to 1
+   - Decrements TTL to 31
+   - Forwards to Router2
+
+3. Router2 receives:
+   - Checks destination ≠ Router2's address
+   - Looks up Bob in route table → next_hop = Bob (direct)
+   - Increments hop count to 2
+   - Decrements TTL to 30
+   - Forwards to Bob
+
+4. Bob receives:
+   - Destination matches Bob's address
+   - Delivers to application layer
+   - Verifies signature (learns source = Alice)
+   - Decrypts payload
+```
+
+### Distance Coverage
+
+| Scenario | Per-Hop Range | 128 Hops Coverage |
+|----------|--------------|-------------------|
+| **Urban** | 0.5-2 km | 64-256 km (40-160 mi) |
+| **Suburban** | 2-5 km | 256-640 km (160-400 mi) |
+| **Rural** | 5-10 km | 640-1,280 km (400-800 mi) |
+| **Line-of-Sight** | 15-40 km | 1,920-5,120 km (1,200-3,200 mi) |
+
+**Example:** A city mesh with 128 hops can cover an entire metropolitan area (100-200 km radius).
 
 ---
 
-## Serial Communication: Why KISS Protocol?
+## Display Features
 
-### The Problem with Pure Serial (Text-Based)
+The Heltec V3 has a 128x64 OLED with 5 pages (cycle with button):
 
-Early versions of Mycorrhizal used simple text commands over serial:
+### Page 1: Main Info (RNode-style)
 ```
-!sendfile <addr> <filename>
-CHUNK0:48656c6c6f...
-CHUNK1:576f726c64...
-```
-
-**Why this fails for binary data:**
-
-1. **Line Buffering Issues**
-   - Serial ports buffer until newline (`\n`)
-   - Binary data might not contain newlines for thousands of bytes
-   - Chunks arrive unpredictably, sometimes concatenated
-
-2. **Special Character Conflicts**
-   - Binary data contains control characters (`\n`, `\r`, `\0x03`)
-   - Serial interpreters treat these as commands
-   - Ctrl-C (0x03) aborts transfers
-   - Newlines split data unexpectedly
-
-3. **Hex Encoding Overhead**
-   - Binary → hex doubles size (1 byte = 2 hex chars)
-   - 850 bytes → 1700 chars → multiple serial packets
-   - Parsing hex is slow on microcontrollers
-
-4. **No Flow Control**
-   - Desktop sends chunks faster than firmware can process
-   - No acknowledgment of receipt
-   - Lost chunks = corrupted files
-
-### KISS Protocol: Reliable Binary Framing
-
-**KISS (Keep It Simple, Stupid)** is a proven protocol from the 1980s used by:
-- **RNode** (LoRa TNC devices)
-- **Ham radio TNCs** (Terminal Node Controllers)
-- **APRS** (Automatic Packet Reporting System)
-
-**Frame format:**
-```
-[FEND] [CMD] [DATA...] [FEND]
- 0xC0   0x10   payload    0xC0
+Heltec_Nod             B  ■
+9151c5bf9f4d3dbe
+12a5c8f7d1e2a6b3
+915.0MHz SF9
+┌──────────────────┐ ■T:5
+│   waterfall      │ ■R:3
+└──────────────────┘
 ```
 
-**Key features:**
+- **Top right:** BLE status (B/b), online indicator (■/□)
+- **Address:** Your node's 32-char hex address (16 chars per line)
+- **LoRa config:** Frequency and spreading factor
+- **Waterfall:** RSSI spectrum (scrolling, 64x16 pixels)
+- **TX/RX blips:** Activity indicators with packet counts
 
-1. **Binary-Safe Framing**
-   - Special byte (FEND = 0xC0) marks frame boundaries
-   - Data is escaped if it contains FEND:
-     - 0xC0 → 0xDB 0xDC (FESC TFEND)
-     - 0xDB → 0xDB 0xDD (FESC TFESC)
-
-2. **Reliable Delimiters**
-   - Each frame is self-contained
-   - No line buffering issues
-   - Works with any binary data
-
-3. **Command Byte**
-   - First byte identifies message type
-   - CMD_FILE_INFO, CMD_FILE_START, CMD_FILE_CHUNK, etc.
-   - Easy to route different operations
-
-4. **No Encoding Overhead**
-   - Send raw bytes (only ~2% escape overhead)
-   - Much faster than hex encoding
-   - Less memory usage
-
-
-### How KISS File Transfer Works
-
-#### Protocol Flow with End Flags
-
+### Page 2: Network Stats
 ```
-Desktop → [C0][11][addr+filename+size][C0]     (FILE_START)
-Firmware → [C0][14][C0]                        (FILE_READY ack)
-Desktop → [C0][12][seq+data][C0]               (FILE_CHUNK)
-Firmware → Sends LoRa fragments with flags=0x00
-Firmware → [C0][15][seq][C0]                   (CHUNK_ACK)
-...repeat for all chunks...
-Desktop → [C0][13][C0]                         (FILE_END)
-Firmware → Sends final LoRa fragment with flags=0x01 (FINAL)
+NETWORK STATS
+Routes: 2
+IDs: 3
+TX: 12  RX: 8
+5KB / 3KB
 ```
 
-**Fragment Format:**
+### Page 3: LoRa Config
 ```
-LoRa Fragment: [transfer_id(16)][index(1)][flags(1)][data(up to 200)]
-
-Flags:
-  0x00 = More fragments coming
-  0x01 = FINAL fragment (last one)
-```
-
-**Why end flags?**
-
-The firmware doesn't need to predict fragment count! Instead:
-- Fragments are numbered sequentially (0, 1, 2...)
-- Last fragment has FINAL flag set
-- Receiver knows transfer is complete when FINAL arrives
-- No prediction errors, works with any chunk size
-
-#### Command Codes
-
-```python
-CMD_FILE_INFO  = 0x10   # Query: How many fragments?
-CMD_FILE_START = 0x11   # Start transfer (Phase 2)
-CMD_FILE_CHUNK = 0x12   # Binary data chunk
-CMD_FILE_END   = 0x13   # Transfer complete
-CMD_FILE_READY = 0x14   # ACK (includes fragment count)
-CMD_CHUNK_ACK  = 0x15   # Chunk received
+LORA CONFIG
+Freq: 915.0MHz
+SF9 BW125kHz
+Power: 14dBm
+Rate: 537bps
+RSSI: -98dBm
 ```
 
-#### File Receive (Desktop Client)
-
-When a file is received over LoRa, the firmware relays it to the connected desktop client:
-
+### Page 4: BLE Status
 ```
-Firmware → Desktop: FILE:<sender>:<transfer_id>:<filename>:<size>
-Firmware → Desktop: FILEDATA:<transfer_id>:<hex_chunk>
-Firmware → Desktop: FILEDATA:<transfer_id>:<hex_chunk>
-...
-Firmware → Desktop: FILEEND:<transfer_id>
+BLE STATUS
+BLE: Connected
+Client active
 ```
 
-Desktop saves to `~/Downloads/mycorrhizal/`
-
-### Technical References
+### Page 5: File Transfers
+```
+TRANSFERS
+Active: 2
+█████░░░░░ 50%
+File: photo.jpg
+```
 
 ---
 
@@ -624,17 +609,17 @@ Desktop saves to `~/Downloads/mycorrhizal/`
 
 Mycorrhizal has **major security gaps** that must be fixed before real-world use.
 
-### ✅ What's Implemented
-- Ed25519 signing keys (keypair generation)
-- X25519 encryption keys (keypair generation)
+### ✅ Implemented
+- Ed25519 signing keys (generation)
+- X25519 encryption keys (generation)
 - SHA-256 hashing
 - 128-bit addresses from public key hash
-- Packet signature field exists
+- Packet signature field
 - Identity persistence
 
-### ❌ Critical Security Gaps
+### ❌ Critical Gaps
 
-#### 1. No Signature Verification 🔴 CRITICAL
+#### 1. No Signature Verification 🔴
 **Status:** Signatures generated but NOT verified
 
 ```python
@@ -644,62 +629,162 @@ def verify_signature(self, public_key):
 ```
 
 **Risk:** Anyone can impersonate anyone
-**Fix:** Implement actual Ed25519 verification
+**Fix:** Implement Ed25519 verification
 
-#### 2. No Key Distribution 🔴 CRITICAL
+#### 2. No Key Distribution 🔴
 **Status:** Nodes don't exchange/store public keys properly
 
 **Risk:** Can't verify signatures without public keys
 **Fix:** Store public keys from announce packets
 
-#### 3. No Encryption 🔴 CRITICAL
+#### 3. No Encryption 🔴
 **Status:** Messages sent in PLAINTEXT
 
 **Risk:** All traffic is public
-**Fix:** Implement X25519 key exchange + ChaCha20-Poly1305 encryption
+**Fix:** Implement X25519 ECDH + ChaCha20-Poly1305
 
-#### 4. Weak Route Authentication 🟡 MEDIUM
+#### 4. Weak Route Authentication 🟡
 **Risk:** Route poisoning attacks possible
 **Fix:** Sign route announcements
 
-#### 5. No Forward Secrecy 🟡 MEDIUM
+#### 5. No Forward Secrecy 🟡
 **Risk:** Compromised keys = all past messages readable
-**Fix:** Ephemeral session keys
+**Fix:** Ephemeral session keys (Double Ratchet)
 
-#### 6. Identity Storage Not Encrypted 🟡 MEDIUM
+#### 6. Identity Storage Not Encrypted 🟡
 **Risk:** Physical access = key theft (`/identity.dat` is plaintext)
 **Fix:** Encrypt identity file with device key
 
-#### 7. No Anti-Replay Protection 🟡 MEDIUM
+#### 7. No Anti-Replay Protection 🟡
 **Risk:** Old packets can be replayed
 **Fix:** Sequence numbers + timestamps
 
 ### Implementation Roadmap
 
-#### Phase 1: Basic Security (v0.2) - NEXT
+**Phase 1: Basic Security (v0.2) - NEXT**
 1. Implement signature verification
 2. Store public keys from announces
 3. Verify all incoming packets
 4. Reject unsigned/invalid packets
 
-#### Phase 2: Encryption (v0.3)
-1. X25519 key exchange implementation
+**Phase 2: Encryption (v0.3)**
+1. X25519 key exchange
 2. Message encryption (ChaCha20-Poly1305)
 3. Encrypt unicast messages
 4. Plaintext broadcasts for discovery
 
-#### Phase 3: Advanced Security (v0.4)
+**Phase 3: Advanced Security (v0.4)**
 1. Ephemeral keys (forward secrecy)
 2. Anti-replay protection
 3. Encrypt identity storage
 4. Key revocation
 
-### Security Warnings
+### Current Security Warnings
 
-**DO NOT USE IN PRODUCTION** - This software is experimental with critical security gaps.
+⚠️ **DO NOT USE IN PRODUCTION** - Experimental software with critical security gaps
 
-**Assume All Traffic Is PUBLIC** - Until encryption is implemented, treat all messages as public broadcasts.
+⚠️ **Assume All Traffic Is PUBLIC** - Until encryption is implemented
 
-**Physical Security** - Devices store private keys in plaintext. Physical access = complete compromise.
+⚠️ **Physical Security** - Devices store private keys in plaintext
 
 ---
+
+## Development
+
+### Flashing Firmware
+
+**Full flash (first time):**
+```bash
+cd utilities/
+python flash_device.py --device heltec_v3 --example mycorrhizal_firmware.py
+```
+
+**Quick update (skip MicroPython flash):**
+```bash
+python flash_device.py --device heltec_v3 --skip-firmware --example mycorrhizal_firmware.py
+```
+
+### Project Structure
+
+```
+mycorrhizal/
+├── mycorrhizal/          # Core library
+│   ├── core/             # Node, routing, identity cache
+│   ├── crypto/           # Ed25519, X25519, encryption
+│   ├── transport/        # Packets, fragmentation
+│   ├── phycore/          # Physical layer (LoRa, UDP)
+│   ├── devices/          # Hardware drivers (SX1262, Heltec)
+│   ├── messaging/        # Colony (group chat)
+│   ├── routing/          # Route table
+│   ├── storage/          # Identity persistence
+│   └── ui/               # Display, BLE
+├── firmware/             # Device firmware
+│   └── mycorrhizal_firmware.py
+├── apps/                 # Client applications
+│   ├── web_chat.html     # Web UI
+│   └── serial_chat.py    # CLI client
+├── utilities/            # Tools
+│   ├── flash_device.py   # Firmware flasher
+│   └── mycctl.py         # CLI control utility
+├── examples/             # Example scripts
+└── tests/                # Unit tests
+```
+
+### Requirements
+
+**Desktop (for clients):**
+- Python 3.8+
+- pyserial (for serial communication)
+
+**Device (Heltec V3):**
+- MicroPython 1.24.0+
+- ssd1306 (OLED driver, auto-installed)
+
+### Contributing
+
+This is experimental software. Contributions welcome!
+
+**Priority areas:**
+1. Signature verification implementation
+2. E2E encryption (X25519 + ChaCha20)
+3. Multi-device group chat testing
+4. File transfer reliability improvements
+5. Documentation
+
+### License
+
+See LICENSE file for details.
+
+---
+
+## Troubleshooting
+
+### Device won't flash
+- Try erasing flash first: `esptool.py --port /dev/ttyUSB0 erase_flash`
+- Check USB cable (needs data lines, not just power)
+- Press BOOT button during flash if needed
+
+### No peers discovered
+- Both devices need to announce: `!announce`
+- Check LoRa frequency matches (915MHz US, 868MHz EU, 433MHz Asia)
+- Ensure devices are within range (~1-5km urban, ~5-15km rural)
+
+### Messages not sending
+- Check route exists: `!peers` should show destination
+- Verify LoRa radio is online (■ icon on display)
+- Check TX counter incrementing (display page 1)
+
+### File transfer fails
+- Keep files under 1KB for reliable transfer
+- Ensure stable connection (no movement during transfer)
+- Check free memory: `!info` → watch for memory errors
+- Try smaller chunk size in transfer settings
+
+### Display issues
+- Blank screen: Check I2C connection (address 0x3C)
+- Frozen display: Reset device (RST button)
+- Waterfall not updating: Normal if no RF activity
+
+---
+
+**Built with curiosity, vibes, and questionable architecture decisions** 🍄✨
