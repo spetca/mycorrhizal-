@@ -27,3 +27,6 @@ build/
 
 # Test files
 test_tx_files/
+
+# macOS
+.DS_Store
